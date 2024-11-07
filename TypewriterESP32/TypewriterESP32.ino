@@ -33,6 +33,7 @@ void loop() {
       timeThis = millis();
     }
     digitalWrite(5, HIGH);
+    
     //  state = PRESS;
     //  delay(300);
   }/*
