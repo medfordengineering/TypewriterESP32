@@ -1,3 +1,4 @@
+
 #define PRESS   1
 #define NOPRESS 0
 
@@ -11,7 +12,9 @@ uint8_t letter[128][2] = {
   { 0, 0 },   //5 NULL
 };
 uint8_t i;
-uint8_t state;
+uint8_t state = NOPRESS;
+long timeThis;
+long timeLast;
 
 void setup() {
   Serial.begin(115200);
@@ -23,20 +26,28 @@ void setup() {
 
 void loop() {
   timeThis = millis();
+  timeLast = timeThis;
   if (digitalRead(7) == false) {
-    state = PRESS;
-    delay(300);
-  }
+    while (timeThis - timeLast <= 100) {
+      digitalWrite(5, digitalRead(6));
+      timeThis = millis();
+    }
+    digitalWrite(5, HIGH);
+    //  state = PRESS;
+    //  delay(300);
+  }/*
 
   switch (state) {
-    case: PRESS
+    case PRESS:
       digitalWrite(5, digitalRead(6));
       if (timeThis - timeLast >= 500) {
         timeLast = timeThis;
         state = NOPRESS;
       }
       break;
-    case: NOPRESS
+    case NOPRESS:
       break;
   }
+  Serial.println(state);
+  delay(20);*/
 }
