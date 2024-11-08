@@ -31,32 +31,29 @@ void loop() {
   timeThis = millis();
   timeLast = timeThis;
   if (digitalRead(7) == false) {
+    pinMode(8, OUTPUT);
     while (timeThis - timeLast <= 100) {
-    //  digitalWrite(8, digitalRead(9));
+      digitalWrite(8, digitalRead(9));
       digitalWrite(5, digitalRead(6));
-    //  digitalWrite(8, digitalRead(9));
-
       timeThis = millis();
     }
     digitalWrite(5, HIGH);
-    digitalWrite(8, HIGH);
+    pinMode(8, INPUT);
 
-
-    //  state = PRESS;
-    //  delay(300);
-  }/*
-
-  switch (state) {
-    case PRESS:
+    delay(1000);
+    timeThis = millis();
+    timeLast = timeThis;
+    // pinMode(8, OUTPUT);
+    while (timeThis - timeLast <= 100) {
+      //  digitalWrite(8, digitalRead(9));
       digitalWrite(5, digitalRead(6));
-      if (timeThis - timeLast >= 500) {
-        timeLast = timeThis;
-        state = NOPRESS;
-      }
-      break;
-    case NOPRESS:
-      break;
+      timeThis = millis();
+    }
+    digitalWrite(5, HIGH);
+    //  pinMode(8, INPUT);
   }
-  Serial.println(state);
-  delay(20);*/
+
+
+
+
 }
