@@ -21,6 +21,9 @@ void setup() {
 
   pinMode(5, OUTPUT);
   pinMode(6, INPUT_PULLUP);
+  pinMode(8, OUTPUT);
+  pinMode(9, INPUT_PULLUP);
+
   pinMode(7, INPUT_PULLUP);
 }
 
@@ -29,11 +32,16 @@ void loop() {
   timeLast = timeThis;
   if (digitalRead(7) == false) {
     while (timeThis - timeLast <= 100) {
+    //  digitalWrite(8, digitalRead(9));
       digitalWrite(5, digitalRead(6));
+    //  digitalWrite(8, digitalRead(9));
+
       timeThis = millis();
     }
     digitalWrite(5, HIGH);
-    
+    digitalWrite(8, HIGH);
+
+
     //  state = PRESS;
     //  delay(300);
   }/*
