@@ -1,45 +1,39 @@
 
-//#include <Adafruit_MCP23X17.h>
+#include <Adafruit_MCP23X17.h>
 
-#define PRESS 1
-#define NOPRESS 0
+Adafruit_MCP23X17 mcp;
 
-unsigned long thisTime, lastTime;
-
-//Adafruit_MCP23X17 mcp;
-
-uint8_t letter[128][2] = {
-  { 6, 5 },  //0 NULL
-  { 0, 0 },  //1 NULL
-  { 0, 0 },  //2 NULL
-  { 0, 0 },  //3 NULL
-  { 0, 0 },  //4 NULL
-  { 0, 0 },  //5 NULL
-};
-uint8_t i;
-uint8_t state = NOPRESS;
-long timeThis;
-long timeLast;
+unsigned long timeThis;
+unsigned long timeLast;
 
 void setup() {
-  Serial.begin(115200);
-  pinMode(2, OUTPUT);
-  pinMode(3, OUTPUT);
-  pinMode(4, OUTPUT);
-  pinMode(5, OUTPUT);
+  Serial.begin(9600);
 
-  digitalWrite(2, LOW);
-  digitalWrite(3, LOW);
-  digitalWrite(4, LOW);
-  digitalWrite(5, LOW);
+  Serial.println("MCP23xxx Blink Test!");
+
+  if (!mcp.begin_I2C()) {
+    Serial.println("Error.");
+    while (1)
+      ;
+  }
+
+  for (int x = 0; x < 8; x++) {
+    mcp.pinMode(x, OUTPUT);
+    mcp.digitalWrite(x, HIGH);
+  }
+  mcp.digitalWrite(0, LOW);
+  mcp.digitalWrite(1, LOW);
+  mcp.digitalWrite(2, LOW);
+  mcp.digitalWrite(7, HIGH);
 }
 
 void loop() {
+
   timeThis = millis();
   if (timeThis - timeLast >= 200) {
-    digitalWrite(5, LOW);
+    mcp.digitalWrite(7, LOW);
     delay(50);
     timeLast = timeThis;
   }
-  digitalWrite(5, HIGH);
+  mcp.digitalWrite(7, HIGH);
 }
