@@ -15,7 +15,7 @@ unsigned long timeLast;
 uint8_t letters[10][2] = {
   { 0, 0 },  //5
   { 1, 0 },  //u
-  { 2, 0 }   //o
+  { 5, 0 }   //o
 };
 
 void setup() {
