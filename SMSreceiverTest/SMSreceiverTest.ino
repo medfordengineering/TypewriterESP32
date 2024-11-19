@@ -57,9 +57,14 @@ void setup() {
   server.on("/sms", HTTP_GET, [](AsyncWebServerRequest* request) {
     Serial.println("sms");
     String inputr[20];
+    String body;
     int paramsNr = request->params();
-    Serial.println(paramsNr);
+    //Serial.println(paramsNr);
 
+    const AsyncWebParameter* p = request->getParam(10);
+    body = p->value();
+    Serial.println(body);
+/*
     for (int i = 0; i < paramsNr; i++) {
       const AsyncWebParameter* p = request->getParam(i);
       // Serial.print("Param name: ");
@@ -71,7 +76,8 @@ void setup() {
 
       //Serial.println(i);
     }
-    Serial.printf("%s:%s:%s:%s\n", inputr[3], inputr[4], inputr[9], inputr[11]);
+    Serial.printf("%s:%s:%s:%s\n", inputr[3], inputr[4], inputr[10], inputr[11]);
+    */
     //request->send(LittleFS, "/index.html", "text/html");
     request->send(LittleFS, "/index.html", String(), false, processor);
   });
