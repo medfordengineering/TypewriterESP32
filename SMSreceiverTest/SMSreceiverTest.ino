@@ -1,8 +1,10 @@
 /*
 0-4 ToCountry:ToState:SmsMessageSid:NumMedia
 5-7 ToCity:FromZip:SmsSid:FromState
+8-11 SmsStatus:FromCity:Body:FromCountry
+12-15 To:�A�?:ToZip:NumSegments
+16-19 MessageSid:AccountSid:From:ApiVersion
 */
-
 
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
@@ -64,10 +66,12 @@ void setup() {
       //Serial.println(p->name());
       //Serial.print("Param value: ");
       //Serial.print(p->value());
-      inputr[i] = p->name();
+     // inputr[i] = p->name();
+      inputr[i] = p->value();
+
       //Serial.println(i);
     }
-    Serial.printf("%s:%s:%s:%s\n",inputr[4], inputr[5],inputr[6], inputr[7]);
+    Serial.printf("%s:%s:%s:%s\n", inputr[3], inputr[4], inputr[9], inputr[11]);
     //request->send(LittleFS, "/index.html", "text/html");
     request->send(LittleFS, "/index.html", String(), false, processor);
   });
