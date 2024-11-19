@@ -1,3 +1,8 @@
+/*
+0-4 ToCountry:ToState:SmsMessageSid:NumMedia
+5-7 ToCity:FromZip:SmsSid:FromState
+*/
+
 
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
@@ -13,10 +18,11 @@ AsyncWebServer server(80);
 // Variable to store the HTTP request
 String header;
 
+const char* PARAM_MESSAGE = "message";
+
 void setup() {
   Serial.begin(115200);
-  
-  
+
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -48,13 +54,32 @@ void setup() {
   // Route for SMS request
   server.on("/sms", HTTP_GET, [](AsyncWebServerRequest* request) {
     Serial.println("sms");
+    String inputr[20];
+    int paramsNr = request->params();
+    Serial.println(paramsNr);
+
+    for (int i = 0; i < paramsNr; i++) {
+      const AsyncWebParameter* p = request->getParam(i);
+      // Serial.print("Param name: ");
+      //Serial.println(p->name());
+      //Serial.print("Param value: ");
+      //Serial.print(p->value());
+      inputr[i] = p->name();
+      //Serial.println(i);
+    }
+    Serial.printf("%s:%s:%s:%s\n",inputr[4], inputr[5],inputr[6], inputr[7]);
     //request->send(LittleFS, "/index.html", "text/html");
-    //request->send(SPIFFS, "/index.html", String(), false, processor);
+    request->send(LittleFS, "/index.html", String(), false, processor);
   });
 
   //Start server
   server.begin();
   Serial.println("HTTP server started");
+}
+
+String processor(const String& var) {
+
+  return String();
 }
 
 void loop() {
