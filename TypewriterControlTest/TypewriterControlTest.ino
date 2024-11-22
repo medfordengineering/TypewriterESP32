@@ -164,7 +164,7 @@ uint8_t letters[128][2] = {
 void send_character(uint8_t c) {
   uint8_t tx_pin_select = letters[c][0];
   uint8_t rx_pin_select = letters[c][1];
-  
+
   /*  There are two mulitpexers to accomodate 12 bits (eight on the lower and four on the upper)
       The output of the lower mp is connected to channel 7 (a free channel) on the upper mp. To 
       address the lower mp you must select that address 7 on the upper mp. To address the upper mp 
@@ -174,9 +174,9 @@ void send_character(uint8_t c) {
 
   if (rx_pin_select > 7) {
     rx_pin_select -= 8;
-    rx_pin_select <<= 4;   
+    rx_pin_select <<= 4;
   } else {
-    rx_pin_select |= 0x70;  
+    rx_pin_select |= 0x70;
   }
 
   Serial.println(rx_pin_select, HEX);
@@ -208,14 +208,20 @@ void setup() {
     mcp.pinMode(x, OUTPUT);
     mcp.digitalWrite(x, HIGH);
   }
+  delay(5000);
 }
 
 void loop() {
+
+/*
   char test[26] = "abcdefghijklmnopqrstuvwxyz";
+
+  //char test[3] = "abc";
   for (int x = 0; x < 26; x++) {
     send_character(test[x]);
-  }
-  //send_character('g');
+  }*/
+  mcp.digitalWrite(15, LOW);  // Enable shift
+  send_character('i');
   delay(2000);
   /*
   timeThis = millis();
@@ -223,6 +229,5 @@ void loop() {
     mcp.digitalWrite(7, LOW);
     delay(50);
     timeLast = timeThis;
-  }
-  mcp.digitalWrite(7, HIGH);*/
+  }*/
 }
