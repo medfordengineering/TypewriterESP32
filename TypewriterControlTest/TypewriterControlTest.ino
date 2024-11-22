@@ -129,58 +129,65 @@ uint8_t letters[128][2] = {
   { 1, 1 },   //98 b
   { 0, 8 },   //99 c
 
-  { 1, 8 },   //100 d
-  { 13, 1 },  //101 e
-  { 13, 7 },  //102 f
-  { 3, 4 },   //103 g
-  { 1, 4 },   //104 h
-  { 3, 6 },   //105 i
-  { 0, 5 },   //106 j
-  { 3, 3 },   //107 k
-  { 3, 2 },   //108 l
-  { 13, 9 },  //109 m
+  { 1, 8 },  //100 d
+  { 3, 9 },  //101 e
+  { 3, 8 },  //102 f
+  { 3, 4 },  //103 g
+  { 1, 4 },  //104 h
+  { 3, 6 },  //105 i
+  { 0, 5 },  //106 j
+  { 3, 3 },  //107 k
+  { 3, 2 },  //108 l
+  { 1, 6 },  //109 m
 
-  { 13, 9 },  //110 n
-  { 13, 9 },  //111 o
-  { 13, 2 },  //112 p
-  { 13, 8 },  //113 q
-  { 13, 7 },  //114 r
-  { 13, 1 },  //115 s
-  { 13, 0 },  //116 t
-  { 13, 9 },  //117 u
-  { 13, 0 },  //118 v
-  { 13, 1 },  //119 w
+  { 0, 6 },  //110 n
+  { 4, 6 },  //111 o
+  { 4, 4 },  //112 p
+  { 4, 7 },  //113 q
+  { 4, 8 },  //114 r
+  { 1, 9 },  //115 s
+  { 4, 5 },  //116 t
+  { 5, 6 },  //117 u
+  { 1, 5 },  //118 v
+  { 4, 9 },  //119 w
 
-  { 13, 1 },  //120 x
-  { 13, 0 },  //121 y
-  { 13, 8 },  //122 z
-  { 0, 0 },   //123 NULL
-  { 0, 0 },   //124 NULL
-  { 0, 0 },   //125 NULL
-  { 0, 0 },   //126 NULL
+  { 0, 9 },  //120 x
+  { 3, 5 },  //121 y
+  { 0, 7 },  //122 z
+  { 0, 0 },  //123 NULL
+  { 0, 0 },  //124 NULL
+  { 0, 0 },  //125 NULL
+  { 0, 0 },  //126 NULL
 
 };
 
 void send_character(uint8_t c) {
   uint8_t tx_pin_select = letters[c][0];
   uint8_t rx_pin_select = letters[c][1];
-  /*
+  
+  /*  There are two mulitpexers to accomodate 12 bits (eight on the lower and four on the upper)
+      The output of the lower mp is connected to channel 7 (a free channel) on the upper mp. To 
+      address the lower mp you must select that address 7 on the upper mp. To address the upper mp 
+      you need to subtract 8 and shift the bits by four to the ouptputs on the 23017 which is 
+      controlling the upper mp. Both mps are by default enabled.
+  */
+
   if (rx_pin_select > 7) {
     rx_pin_select -= 8;
-    rx_pin_select <<= 4;
-    rx_pin_select |= 0x08;
+    rx_pin_select <<= 4;   
   } else {
-    rx_pin_select |= 0x80;
-  }*/
-
-  rx_pin_select |= 0x70;
+    rx_pin_select |= 0x70;  
+  }
 
   Serial.println(rx_pin_select, HEX);
 
-  //tx_pin_select |= 0x08;
+  // Select channel on demultiplexer from which to write signal
   mcp.writeGPIOA(rx_pin_select);
+
+  // Select channel on multiplexer from which to read signal
   mcp.writeGPIOB(tx_pin_select);
 
+  // Strobe demulitplexer to type character
   mcp.digitalWrite(11, LOW);
   delay(50);
   mcp.digitalWrite(11, HIGH);
@@ -204,8 +211,8 @@ void setup() {
 }
 
 void loop() {
-  char test[20] = "ghijk";
-  for (int x = 0; x < 4; x++) {
+  char test[26] = "abcdefghijklmnopqrstuvwxyz";
+  for (int x = 0; x < 26; x++) {
     send_character(test[x]);
   }
   //send_character('g');
