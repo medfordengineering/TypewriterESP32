@@ -11,12 +11,13 @@ Adafruit_MCP23X17 mcp;
 
 unsigned long timeThis;
 unsigned long timeLast;
-/*
-uint8_t letters[10][2] = {
-  { 0, 0 },  //5
-  { 1, 0 },  //u
-  { 3, 2 }  //o
-};*/
+
+// Special keyboard characters that require a shift.
+const char odds_char[] = "!@#$%&*()_+:\"?";
+const char keys_char[] = "abcdefghijklmnopqrstuvwxyz.,-=;'1234567890";
+const char caps_char[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const char ctrs_char[] = "\r, \b, \n";
+
 
 uint8_t letters[128][2] = {
   { 0, 0 },   //0 NULL
@@ -24,16 +25,17 @@ uint8_t letters[128][2] = {
   { 0, 0 },   //2 NULL
   { 0, 0 },   //3 NULL
   { 0, 0 },   //4 NULL
+  
   { 0, 0 },   //5 NULL
   { 0, 0 },   //6 NULL
   { 0, 0 },   //7 NULL
-  { 13, 3 },  //8 BACK SPACE
+  { 5, 2 },   //8 BACK SPACE
   { 13, 8 },  //9 TAB
 
   { 0, 0 },   //10 LF
   { 0, 0 },   //11 NULL
   { 0, 0 },   //12 NULL
-  { 3, 0 },   //13 CARRIAGE RETURN
+  { 13, 0 },   //13 CARRIAGE RETURN
   { 13, 1 },  //14 MARGIN RELEASE
   { 13, 7 },  //15 LEFT MARGIN
   { 0, 0 },   //16 NULL
@@ -55,7 +57,7 @@ uint8_t letters[128][2] = {
   { 0, 0 },   //30 NULL
   { 0, 0 },   //31 NULL
   { 0, 3 },   //32 SPACE
-  { 0, 0 },   //33 !
+  { 6, 9 },   //33 !
   { 1, 2 },   //34 "
   { 13, 8 },  //35 #
   { 13, 8 },  //36 $
@@ -161,7 +163,25 @@ uint8_t letters[128][2] = {
 
 };
 
+// MAKE THIS CHAR
 void send_character(uint8_t c) {
+
+  bool shift;
+
+  // Check to see which sort of character is being sent.
+  char *odds = strchr(odds_char, c);
+  char *keys = strchr(keys_char, c);
+  char *caps = strchr(caps_char, c);
+  char *ctrs = strchr(ctrs_char, c);
+
+  if (caps != NULL) {
+    shift = true;
+    c += 32;
+    Serial.print(c);
+  } else {
+    shift = false;
+  }
+
   uint8_t tx_pin_select = letters[c][0];
   uint8_t rx_pin_select = letters[c][1];
 
@@ -171,7 +191,6 @@ void send_character(uint8_t c) {
       you need to subtract 8 and shift the bits by four to the ouptputs on the 23017 which is 
       controlling the upper mp. Both mps are by default enabled.
   */
-
   if (rx_pin_select > 7) {
     rx_pin_select -= 8;
     rx_pin_select <<= 4;
@@ -187,10 +206,16 @@ void send_character(uint8_t c) {
   // Select channel on multiplexer from which to read signal
   mcp.writeGPIOB(tx_pin_select);
 
+  // Turn off shift (set on by default with write to GPIOB)
+  if (shift != true) mcp.digitalWrite(15, HIGH);
+
   // Strobe demulitplexer to type character
   mcp.digitalWrite(11, LOW);
   delay(50);
   mcp.digitalWrite(11, HIGH);
+
+  // Turn off shift
+  //mcp.digitalWrite(15, HIGH);
 }
 
 void setup() {
@@ -213,15 +238,15 @@ void setup() {
 
 void loop() {
 
-/*
+  /*
   char test[26] = "abcdefghijklmnopqrstuvwxyz";
 
   //char test[3] = "abc";
   for (int x = 0; x < 26; x++) {
     send_character(test[x]);
   }*/
-  mcp.digitalWrite(15, LOW);  // Enable shift
-  send_character('i');
+
+  send_character('"');
   delay(2000);
   /*
   timeThis = millis();
