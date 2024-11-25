@@ -38,9 +38,9 @@ STEP 2: Paste the proxy address into the webhook section of Twilio
 AsyncWebServer server(80);
 
 // Variable to store the HTTP request
-String header;
+//String header;
 
-const char* PARAM_MESSAGE = "message";
+//const char* PARAM_MESSAGE = "message";
 
 void setup() {
   Serial.begin(115200);
@@ -85,11 +85,11 @@ void setup() {
     body = p->value();
     Serial.println(body);
 
-    const AsyncWebParameter* p = request->getParam(18);
+    p = request->getParam(18);
     phone = p->value();
     Serial.println(phone);
 
-    request->send(LittleFS, "/index.html", String(), false, processor);
+   // request->send(LittleFS, "/index.html", String(), false, processor);
     
 
 /*
@@ -117,10 +117,6 @@ void setup() {
   Serial.println("HTTP server started");
 }
 
-String processor(AsyncWebServerRequest* var) {
-
-  return String();
-}
 
 void loop() {
 }
