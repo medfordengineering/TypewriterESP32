@@ -20,7 +20,7 @@ const char ctrs_char[] = "\r, \b, \n";
 
 
 uint8_t letters[128][2] = {
-  { 0, 0 },   //0 NULL
+  { 3, 0 },   //0 NULL
   { 0, 0 },   //1 NULL
   { 0, 0 },   //2 NULL
   { 0, 0 },   //3 NULL
@@ -238,15 +238,18 @@ void setup() {
 
 void loop() {
 
-  /*
-  char test[26] = "abcdefghijklmnopqrstuvwxyz";
+  
+ // char test[27] = "abcdefghijklmnopqrstuvwxyz";
+
+  char test[9] = "The dogs";
+
 
   //char test[3] = "abc";
-  for (int x = 0; x < 26; x++) {
+  for (int x = 0; x < 9; x++) {
     send_character(test[x]);
-  }*/
+  }
 
-  send_character('"');
+  //send_character('"');
   delay(2000);
   /*
   timeThis = millis();
