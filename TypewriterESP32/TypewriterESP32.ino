@@ -67,7 +67,7 @@ uint8_t letters[128][2] = {
 
   { 5, 4 },  //40 (
   { 5, 3 },  //41 )
-  { 4, 2 },  //42 *
+  { 6, 4 },  //42 *
   { 6, 2 },  //43 +
   { 1, 3 },  //44 ,
   { 6, 3 },  //45 -
@@ -87,16 +87,16 @@ uint8_t letters[128][2] = {
   { 1, 0 },  //58 :
   { 1, 0 },  //59 ;
 
-  { 0, 0 },   //60 <
-  { 13, 3 },  //61 =
-  { 6, 2 },   //62 >
-  { 0, 0 },   //63 ?
-  { 5, 8 },   //64 @
-  { 0, 0 },   //65 NULL
-  { 0, 0 },   //66 NULL
-  { 0, 0 },   //67 NULL
-  { 0, 0 },   //68 NULL
-  { 0, 0 },   //69 NULL
+  { 0, 0 },  //60 <
+  { 6, 2 },  //61 =
+  { 6, 2 },  //62 >
+  { 0, 0 },  //63 ?
+  { 5, 8 },  //64 @
+  { 0, 0 },  //65 NULL
+  { 0, 0 },  //66 NULL
+  { 0, 0 },  //67 NULL
+  { 0, 0 },  //68 NULL
+  { 0, 0 },  //69 NULL
 
   { 0, 0 },  //70 NULL
   { 0, 0 },  //71 NULL
@@ -177,6 +177,8 @@ void send_character(uint8_t c) {
   if (caps != NULL) {
     shift = true;
     c += 32;
+  } else if (odds != NULL) {
+    shift = true;
   } else {
     shift = false;
   }
@@ -210,7 +212,7 @@ void send_character(uint8_t c) {
 
   // Strobe demulitplexer to type character
   mcp.digitalWrite(11, LOW);
-  delay(50);
+  delay(25);
   mcp.digitalWrite(11, HIGH);
 
   // Turn off shift
@@ -238,12 +240,12 @@ void setup() {
 
 void loop() {
 
-  // char test[27] = "abcdefghijklmnopqrstuvwxyz";
+  char test[28] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r";
 
-  char test[10] = "ThE CatS\r";
+  //char test[44] = "abcdefghijklmnopqrstuvwxyz.,-=;'1234567890\r";
 
-  //char test[3] = "abc";
-  for (int x = 0; x < 9; x++) {
+ // char test[17] = "!@#$%&*()_+:\"?\r";
+  for (int x = 0; x < 27; x++) {
     send_character(test[x]);
     //Serial.println(test[x], HEX);
   }
