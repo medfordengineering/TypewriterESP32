@@ -199,8 +199,6 @@ void send_character(uint8_t c) {
     rx_pin_select |= 0x70;
   }
 
-  //Serial.println(rx_pin_select, HEX);
-
   // Select channel on demultiplexer from which to write signal
   mcp.writeGPIOA(rx_pin_select);
 
@@ -210,16 +208,11 @@ void send_character(uint8_t c) {
   // Turn off shift (set on by default with write to GPIOB)
   if (shift != true) mcp.digitalWrite(15, HIGH);
 
-  //if (c == '\r') {
-  //  delay(5000);
-  //}
   // Strobe demulitplexer to type character
   mcp.digitalWrite(11, LOW);
   delay(100);
   mcp.digitalWrite(11, HIGH);
 
-  // Turn off shift
-  //mcp.digitalWrite(15, HIGH);
 }
 
 void setup() {
@@ -238,7 +231,6 @@ void setup() {
     mcp.pinMode(x, OUTPUT);
     mcp.digitalWrite(x, HIGH);
   }
- // delay(5000);
  
 }
 
@@ -249,15 +241,16 @@ void loop() {
   //char test[44] = "abcdefghijklmnopqrstuvwxyz.,-=;'1234567890\r";
 
   // char test[17] = "!@#$%&*()_+:\"?\r";
-  char test[39] = "cat are the cokl and this is a lotopt\r";
+  //char test[39] = "cat are the cokl and this is a lotopt\r";
   //char test[21] = "pot pot pot pot pot\r";
-  for (int x = 0; x < 38; x++) {
-    send_character(test[x]);
+
+  String msg = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r";
+//  for (int x = 0; x < 38; x++) {
+  for (int x = 0; x < (msg.length()); x++) {
+    send_character(msg[x]);
     //Serial.println(test[x], HEX);
   }
-
   delay(5000);
- // send_character('\r');
   /*
   timeThis = millis();
   if (timeThis - timeLast >= 1000) {
