@@ -1,5 +1,13 @@
 
 #include <Adafruit_MCP23X17.h>
+#include <WiFi.h>
+#include <ESPAsyncWebServer.h>
+
+#define WIFI_SSID "EngineeringSubNet"
+#define WIFI_PASS "password"
+
+// Set web server port number to 80
+AsyncWebServer server(80);
 
 #define set_bit(var, pin) var |= 1 << (unsigned char)pin
 #define clear_bit(var, pin) var &= ~(1 << (unsigned char)pin)
@@ -163,6 +171,10 @@ uint8_t letters[128][2] = {
 
 };
 
+String body;
+String phone;
+bool msg_rx = false;
+
 // MAKE THIS CHAR
 void send_character(uint8_t c) {
 
@@ -182,7 +194,7 @@ void send_character(uint8_t c) {
   } else {
     shift = false;
   }
-  Serial.println(c);
+  // Serial.println(c);
   uint8_t tx_pin_select = letters[c][0];
   uint8_t rx_pin_select = letters[c][1];
 
@@ -210,14 +222,40 @@ void send_character(uint8_t c) {
 
   // Strobe demulitplexer to type character
   mcp.digitalWrite(11, LOW);
-  delay(100);
+  delay(30);
   mcp.digitalWrite(11, HIGH);
-
 }
 
 void setup() {
   Serial.begin(115200);
   delay(4000);
+
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.println("WiFi connected.");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+
+  server.on("/sms", HTTP_GET, [](AsyncWebServerRequest *request) {
+    // String body;
+    // String phone;
+    const AsyncWebParameter *p = request->getParam(10);
+    body = p->value();
+    Serial.println(body);
+
+    p = request->getParam(18);
+    phone = p->value();
+    Serial.println(phone);
+    msg_rx = true;
+  });
+
+  //Start server
+  server.begin();
+  Serial.println("HTTP server started");
 
   Serial.println("MCP23xxx Blink Test!");
 
@@ -231,26 +269,28 @@ void setup() {
     mcp.pinMode(x, OUTPUT);
     mcp.digitalWrite(x, HIGH);
   }
- 
 }
 
 void loop() {
+  /*
+  String msg = "ABCD\r";
 
-  //  char test[28] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r";
-
-  //char test[44] = "abcdefghijklmnopqrstuvwxyz.,-=;'1234567890\r";
-
-  // char test[17] = "!@#$%&*()_+:\"?\r";
-  //char test[39] = "cat are the cokl and this is a lotopt\r";
-  //char test[21] = "pot pot pot pot pot\r";
-
-  String msg = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r";
-//  for (int x = 0; x < 38; x++) {
   for (int x = 0; x < (msg.length()); x++) {
     send_character(msg[x]);
-    //Serial.println(test[x], HEX);
   }
   delay(5000);
+*/
+  if (msg_rx == true) {
+     for (int x = 0; x < (phone.length()); x++) {
+      send_character(phone[x]);
+    }
+    send_character(':');
+    for (int x = 0; x < (body.length()); x++) {
+      send_character(body[x]);
+    }
+    send_character('\r');
+    msg_rx = false;
+  }
   /*
   timeThis = millis();
   if (timeThis - timeLast >= 1000) {

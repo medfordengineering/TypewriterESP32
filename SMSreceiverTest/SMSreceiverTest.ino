@@ -44,6 +44,7 @@ AsyncWebServer server(80);
 
 void setup() {
   Serial.begin(115200);
+  delay(4000);
 
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   while (WiFi.status() != WL_CONNECTED) {
@@ -54,7 +55,7 @@ void setup() {
   Serial.println("WiFi connected.");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
-
+/*
   if (!LittleFS.begin()) {
     Serial.println("Failed to initialize LittleFS");
     return;
@@ -72,7 +73,7 @@ void setup() {
     Serial.println("css");
     request->send(LittleFS, "/styles.css", "text/css");
   });
-
+*/
   // Route for SMS request
   server.on("/sms", HTTP_GET, [](AsyncWebServerRequest* request) {
     //Serial.println("sms");
