@@ -210,9 +210,12 @@ void send_character(uint8_t c) {
   // Turn off shift (set on by default with write to GPIOB)
   if (shift != true) mcp.digitalWrite(15, HIGH);
 
+  //if (c == '\r') {
+  //  delay(5000);
+  //}
   // Strobe demulitplexer to type character
   mcp.digitalWrite(11, LOW);
-  delay(25);
+  delay(100);
   mcp.digitalWrite(11, HIGH);
 
   // Turn off shift
@@ -235,22 +238,26 @@ void setup() {
     mcp.pinMode(x, OUTPUT);
     mcp.digitalWrite(x, HIGH);
   }
-  delay(5000);
+ // delay(5000);
+ 
 }
 
 void loop() {
 
-  char test[28] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r";
+  //  char test[28] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r";
 
   //char test[44] = "abcdefghijklmnopqrstuvwxyz.,-=;'1234567890\r";
 
- // char test[17] = "!@#$%&*()_+:\"?\r";
-  for (int x = 0; x < 27; x++) {
+  // char test[17] = "!@#$%&*()_+:\"?\r";
+  char test[39] = "cat are the cokl and this is a lotopt\r";
+  //char test[21] = "pot pot pot pot pot\r";
+  for (int x = 0; x < 38; x++) {
     send_character(test[x]);
     //Serial.println(test[x], HEX);
   }
 
-  delay(2000);
+  delay(5000);
+ // send_character('\r');
   /*
   timeThis = millis();
   if (timeThis - timeLast >= 1000) {
