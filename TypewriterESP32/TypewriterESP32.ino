@@ -9,16 +9,7 @@
 // Set web server port number to 80
 AsyncWebServer server(80);
 
-#define set_bit(var, pin) var |= 1 << (unsigned char)pin
-#define clear_bit(var, pin) var &= ~(1 << (unsigned char)pin)
-#define clr_bit(var, pin) clear_bit(var, pin)
-#define test_bit(var, pin) ((var & (1 << (unsigned char)pin)) >> pin)
-#define toggle_bit(var, pin) var ^= 1 << (unsigned char)pin
-
 Adafruit_MCP23X17 mcp;
-
-unsigned long timeThis;
-unsigned long timeLast;
 
 // Special keyboard characters that require a shift.
 const char odds_char[] = "!@#$%&*()_+:\"?";
@@ -222,7 +213,7 @@ void send_character(uint8_t c) {
 
   // Strobe demulitplexer to type character
   mcp.digitalWrite(11, LOW);
-  delay(30);
+  delay(100);
   mcp.digitalWrite(11, HIGH);
 }
 
@@ -272,14 +263,6 @@ void setup() {
 }
 
 void loop() {
-  /*
-  String msg = "ABCD\r";
-
-  for (int x = 0; x < (msg.length()); x++) {
-    send_character(msg[x]);
-  }
-  delay(5000);
-*/
   if (msg_rx == true) {
      for (int x = 0; x < (phone.length()); x++) {
       send_character(phone[x]);
@@ -291,11 +274,4 @@ void loop() {
     send_character('\r');
     msg_rx = false;
   }
-  /*
-  timeThis = millis();
-  if (timeThis - timeLast >= 1000) {
-    mcp.digitalWrite(7, LOW);
-    delay(50);
-    timeLast = timeThis;
-  }*/
 }
