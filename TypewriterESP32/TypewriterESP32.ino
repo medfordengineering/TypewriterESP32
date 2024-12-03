@@ -2,6 +2,8 @@
 #include <Adafruit_MCP23X17.h>
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
+#include <FS.h>
+#include <LittleFS.h>
 
 #define WIFI_SSID "EngineeringSubNet"
 #define WIFI_PASS "password"
@@ -164,7 +166,38 @@ uint8_t letters[128][2] = {
 
 String body;
 String phone;
-bool msg_rx = false;
+bool msg = false;
+
+String findCaller(fs::FS &fs, const char *path, String n) {
+  String name;
+  File file = fs.open(path, "r");
+
+  if (!file) {
+    Serial.println("No Saved Data!");
+  }
+
+  while (file.available()) {
+    String line = file.readStringUntil('\n');
+    if (line.indexOf(n) != -1) {
+      name = line.substring(line.indexOf(',') + 1);
+      name.trim();
+    }
+  }
+  file.close();
+  return name;
+}
+
+void addCaller(fs::FS &fs, const char *path, String number) {
+
+  File file = fs.open(path, "a");
+  if (!file) {
+    Serial.println("- failed to open file for appending");
+    return;
+  }
+  number = '\n' + number + ", UNKNOWN" + '\n';
+  file.print(number);
+  file.close();
+}
 
 // MAKE THIS CHAR
 void send_character(uint8_t c) {
@@ -241,7 +274,7 @@ void setup() {
     p = request->getParam(18);
     phone = p->value();
     Serial.println(phone);
-    msg_rx = true;
+    msg = true;
   });
 
   //Start server
@@ -256,6 +289,11 @@ void setup() {
       ;
   }
 
+  if (!LittleFS.begin()) {
+    Serial.println("Failed to initialize LittleFS");
+    return;
+  }
+
   for (int x = 0; x < 16; x++) {
     mcp.pinMode(x, OUTPUT);
     mcp.digitalWrite(x, HIGH);
@@ -263,15 +301,26 @@ void setup() {
 }
 
 void loop() {
-  if (msg_rx == true) {
-     for (int x = 0; x < (phone.length()); x++) {
-      send_character(phone[x]);
+  const char *pathToFile = "/phones.txt";
+  if (msg == true) {
+    String t = findCaller(LittleFS, pathToFile, phone);
+    if (t != NULL) {
+      Serial.println(t);
+      for (int x = 0; x < (t.length()); x++) {
+        send_character(t[x]);
+      }
+    } else {
+      Serial.print("unknown/n");
+      addCaller(LittleFS, pathToFile, phone);
+      for (int x = 0; x < (phone.length()); x++) {
+        send_character(phone[x]);
+      }
     }
     send_character(':');
     for (int x = 0; x < (body.length()); x++) {
       send_character(body[x]);
     }
     send_character('\r');
-    msg_rx = false;
+    msg = false;
   }
 }
