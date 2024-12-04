@@ -1,17 +1,50 @@
+/* PARAMS
+0:ToCountry
+1:ToState
+2:SmsMessageSid
+3:NumMedia
+4:ToCity
+5:FromZip
+6:SmsSid
+7:FromState
+8:SmsStatus
+9:FromCity
+10:Body
+11:FromCountry
+12:To
+13:�A�?
+14:ToZip
+15:NumSegments
+16:MessageSid
+17:AccountSid
+18:From
+19:ApiVersion
+*/
 
 #include <Adafruit_MCP23X17.h>
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
 #include <FS.h>
 #include <LittleFS.h>
+#include <NTPClient.h>
+#include <WiFiUdp.h>
 
 #define WIFI_SSID "EngineeringSubNet"
 #define WIFI_PASS "password"
+
+#define EST -18000
+#define EDT -14400
 
 // Set web server port number to 80
 AsyncWebServer server(80);
 
 Adafruit_MCP23X17 mcp;
+
+//NTPClient timeClient(ntpUDP, "pool.ntp.org", utcOffsetInSeconds);
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP);
+
+const long utcOffsetInSeconds = EST;
 
 // Special keyboard characters that require a shift.
 const char odds_char[] = "!@#$%&*()_+:\"?";
@@ -264,9 +297,9 @@ void setup() {
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 
+  timeClient.setTimeOffset(utcOffsetInSeconds);
+
   server.on("/sms", HTTP_GET, [](AsyncWebServerRequest *request) {
-    // String body;
-    // String phone;
     const AsyncWebParameter *p = request->getParam(10);
     body = p->value();
     Serial.println(body);
@@ -277,22 +310,25 @@ void setup() {
     msg = true;
   });
 
-  //Start server
+  // Start server
   server.begin();
-  Serial.println("HTTP server started");
 
-  Serial.println("MCP23xxx Blink Test!");
+  // Start time
+  timeClient.begin();
 
+  // Start I2C
   if (!mcp.begin_I2C()) {
-    Serial.println("Error.");
-    while (1)
-      ;
-  }
-
-  if (!LittleFS.begin()) {
-    Serial.println("Failed to initialize LittleFS");
+    Serial.println("No I2C.");
     return;
   }
+
+  // Start file system
+  if (!LittleFS.begin()) {
+    Serial.println("No FS.");
+    return;
+  }
+
+  Serial.println("All Systems Go!");
 
   for (int x = 0; x < 16; x++) {
     mcp.pinMode(x, OUTPUT);
@@ -302,7 +338,18 @@ void setup() {
 
 void loop() {
   const char *pathToFile = "/phones.txt";
+  String formattedDate;
+
+  while (!timeClient.update()) {
+    timeClient.forceUpdate();
+  }
+
+  formattedDate = timeClient.getFormattedDate();
+
   if (msg == true) {
+    for (int x = 0; x < (formattedDate.length()); x++) {
+      send_character(formattedDate[x]);
+    }
     String t = findCaller(LittleFS, pathToFile, phone);
     if (t != NULL) {
       Serial.println(t);
