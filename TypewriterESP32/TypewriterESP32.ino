@@ -1,26 +1,3 @@
-/* PARAMS
-0:ToCountry
-1:ToState
-2:SmsMessageSid
-3:NumMedia
-4:ToCity
-5:FromZip
-6:SmsSid
-7:FromState
-8:SmsStatus
-9:FromCity
-10:Body
-11:FromCountry
-12:To
-13:�A�?
-14:ToZip
-15:NumSegments
-16:MessageSid
-17:AccountSid
-18:From
-19:ApiVersion
-*/
-
 #include <Adafruit_MCP23X17.h>
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
@@ -35,14 +12,39 @@
 #define EST -18000
 #define EDT -14400
 
-// Set web server port number to 80
+// Establish server
 AsyncWebServer server(80);
 
+// Establish I2C expander
 Adafruit_MCP23X17 mcp;
 
-//NTPClient timeClient(ntpUDP, "pool.ntp.org", utcOffsetInSeconds);
+// Establish time
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP);
+
+// Itemize 20 parameters in SMS message
+enum SMS {
+  TOCOUNTRY,
+  TOSTATE,
+  SMSMESSAGESID,
+  NUMMEDIA,
+  TOCITY,
+  FROMZIP,
+  SMSSID,
+  FROMSTATE,
+  SMSSTATUS,
+  FROMCITY,
+  BODY,
+  FROMCOUNTRY,
+  TO,
+  USQ,
+  TOZIP,
+  NUMSEGMENTS,
+  MESSAGESID,
+  ACCOUNTSID,
+  FROM,
+  APIVERSION
+};
 
 const long utcOffsetInSeconds = EST;
 
@@ -51,7 +53,6 @@ const char odds_char[] = "!@#$%&*()_+:\"?";
 const char keys_char[] = "abcdefghijklmnopqrstuvwxyz.,-=;'1234567890";
 const char caps_char[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const char ctrs_char[] = "\r, \b, \n";
-
 
 uint8_t letters[128][2] = {
   { 0, 0 },  //0 NULL
@@ -199,11 +200,12 @@ uint8_t letters[128][2] = {
 
 String body;
 String phone;
+const char *pathToFile = "/phones.txt";
 bool msg = false;
 
-String findCaller(fs::FS &fs, const char *path, String n) {
+String findCaller(fs::FS &fs, String n) {
   String name;
-  File file = fs.open(path, "r");
+  File file = fs.open(pathToFile, "r");
 
   if (!file) {
     Serial.println("No Saved Data!");
@@ -220,9 +222,9 @@ String findCaller(fs::FS &fs, const char *path, String n) {
   return name;
 }
 
-void addCaller(fs::FS &fs, const char *path, String number) {
+void addCaller(fs::FS &fs, String number) {
 
-  File file = fs.open(path, "a");
+  File file = fs.open(pathToFile, "a");
   if (!file) {
     Serial.println("- failed to open file for appending");
     return;
@@ -232,7 +234,7 @@ void addCaller(fs::FS &fs, const char *path, String number) {
   file.close();
 }
 
-// MAKE THIS CHAR
+// Send one character to the typewriter
 void send_character(uint8_t c) {
 
   bool shift;
@@ -300,13 +302,19 @@ void setup() {
   timeClient.setTimeOffset(utcOffsetInSeconds);
 
   server.on("/sms", HTTP_GET, [](AsyncWebServerRequest *request) {
-    const AsyncWebParameter *p = request->getParam(10);
+    enum SMS data;
+    const AsyncWebParameter *p;
+
+    data = BODY;
+    p = request->getParam(data);
     body = p->value();
     Serial.println(body);
 
-    p = request->getParam(18);
+    data = FROM;
+    p = request->getParam(data);
     phone = p->value();
     Serial.println(phone);
+
     msg = true;
   });
 
@@ -330,6 +338,7 @@ void setup() {
 
   Serial.println("All Systems Go!");
 
+  // Set all pins on I2C expander to high
   for (int x = 0; x < 16; x++) {
     mcp.pinMode(x, OUTPUT);
     mcp.digitalWrite(x, HIGH);
@@ -337,37 +346,40 @@ void setup() {
 }
 
 void loop() {
-  const char *pathToFile = "/phones.txt";
-  String formattedDate;
 
   while (!timeClient.update()) {
     timeClient.forceUpdate();
   }
 
-  formattedDate = timeClient.getFormattedDate();
-
   if (msg == true) {
-    for (int x = 0; x < (formattedDate.length()); x++) {
-      send_character(formattedDate[x]);
+
+    // Get date and time
+    String formattedDate = timeClient.getFormattedDate();
+    int splitT = formattedDate.indexOf("T");
+    String date = formattedDate.substring(2, splitT);
+    String time = formattedDate.substring(splitT + 1, formattedDate.length() - 4);
+
+    // Get name of sender or use phone number
+    String id = findCaller(LittleFS, phone);
+    if (id == NULL) {
+      addCaller(LittleFS, phone);
+      id = phone;
     }
-    String t = findCaller(LittleFS, pathToFile, phone);
-    if (t != NULL) {
-      Serial.println(t);
-      for (int x = 0; x < (t.length()); x++) {
-        send_character(t[x]);
-      }
-    } else {
-      Serial.print("unknown/n");
-      addCaller(LittleFS, pathToFile, phone);
-      for (int x = 0; x < (phone.length()); x++) {
-        send_character(phone[x]);
-      }
+
+    // Build message
+    String message = date + " " + time + " " + id + ": " + body + '\r';
+
+    // Send message
+    for (int x = 0; x < (message.length()); x++) {
+      send_character(message[x]);
     }
-    send_character(':');
-    for (int x = 0; x < (body.length()); x++) {
-      send_character(body[x]);
-    }
-    send_character('\r');
     msg = false;
   }
+
+/* Check this every 24hours
+  if (((month > MAR) && (month < NOV)) || ((month == MAR) && (previousSunday >= MAGIC_NUMBER)) || ((month == MAR) && (day > WEEK * 2)) || ((month == NOV) && (previousSunday < 1)))
+    timeClient.setTimeOffset(EDT);
+  else
+    timeClient.setTimeOffset(EST);
+    */
 }
