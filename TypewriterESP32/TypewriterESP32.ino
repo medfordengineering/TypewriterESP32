@@ -1,3 +1,9 @@
+/*
+Add lights
+Double key
+Fix shift
+*/
+
 #include <Adafruit_MCP23X17.h>
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
@@ -236,7 +242,7 @@ void addCaller(fs::FS &fs, String number) {
 
 // Send one character to the typewriter
 void send_character(uint8_t c) {
-
+  static char last_character;
   bool shift;
 
   // Check to see which sort of character is being sent.
@@ -270,6 +276,9 @@ void send_character(uint8_t c) {
     rx_pin_select |= 0x70;
   }
 
+  // Delay to allow for double characters
+  if (last_character == c) delay(500);
+
   // Select channel on demultiplexer from which to write signal
   mcp.writeGPIOA(rx_pin_select);
 
@@ -283,6 +292,7 @@ void send_character(uint8_t c) {
   mcp.digitalWrite(11, LOW);
   delay(100);
   mcp.digitalWrite(11, HIGH);
+  last_character = c;
 }
 
 void setup() {
@@ -376,7 +386,7 @@ void loop() {
     msg = false;
   }
 
-/* Check this every 24hours
+  /* Check this every 24hours
   if (((month > MAR) && (month < NOV)) || ((month == MAR) && (previousSunday >= MAGIC_NUMBER)) || ((month == MAR) && (day > WEEK * 2)) || ((month == NOV) && (previousSunday < 1)))
     timeClient.setTimeOffset(EDT);
   else
