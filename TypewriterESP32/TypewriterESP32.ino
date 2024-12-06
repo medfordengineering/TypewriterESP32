@@ -18,6 +18,14 @@ Fix shift
 #define EST -18000
 #define EDT -14400
 
+#define SHIFT 15
+#define STROBE 14
+#define CODE 13
+
+#define AUTO_INDENT 50
+#define BOLD 49
+#define UNDERLINE 17
+
 // Establish server
 AsyncWebServer server(80);
 
@@ -74,13 +82,13 @@ uint8_t letters[128][2] = {
   { 3, 7 },  //9 TAB
 
   { 0, 0 },  //10 LF
-  { 0, 0 },  //11 NULL
+  { 0, 0 },  //11
   { 0, 0 },  //12 NULL
   { 3, 0 },  //13 CARRIAGE RETURN
-  { 5, 9 },  //14 MARGIN RELEASE
+  { 0, 0 },  //14
   { 6, 8 },  //15 LEFT MARGIN
   { 0, 0 },  //16 NULL
-  { 0, 0 },  //17 NULL
+  { 5, 9 },  //17 MARGIN RELEASE
   { 0, 0 },  //18 NULL
   { 0, 0 },  //19 NULL
 
@@ -208,6 +216,11 @@ String body;
 String phone;
 const char *pathToFile = "/phones.txt";
 bool msg = false;
+bool code = false;
+
+bool autoreturn = false;
+bool bold = false;
+bool underline = false;
 
 void readFile(fs::FS &fs) {
   Serial.printf("Reading file: %s\r\n", pathToFile);
@@ -296,25 +309,37 @@ void send_character(uint8_t c) {
   // Select channel on demultiplexer from which to write signal
   mcp.writeGPIOA(rx_pin_select);
 
-  // Select channel on multiplexer from which to read signal
+  // Select channel on multiplexer from which to read signal and disable strobe with OR.
   mcp.writeGPIOB(tx_pin_select | 0x40);
 
-  // Turn on shift (set off (LOW) by default with write to GPIOB)
-  if (shift == true) mcp.digitalWrite(15, HIGH);
+  // Turn on shift (set off (LOW) by default with write to GPIOB) give time to settle
+  if (shift == true) mcp.digitalWrite(SHIFT, HIGH);
+  if (shift == true) delay(200);
 
-  if (shift == true) delay(300);
+  // Turn on code (set off (LOW) by default with write to GPIOB) give time to settle
+  if (code == true) mcp.digitalWrite(CODE, HIGH);
+  if (code == true) delay(200);
 
   // Delay to allow for double characters
   if (last_character == c) delay(50);
 
   // Strobe demulitplexer to type character
-  mcp.digitalWrite(14, LOW);
+  mcp.digitalWrite(STROBE, LOW);
   delay(100);
-  mcp.digitalWrite(14, HIGH);
+  mcp.digitalWrite(STROBE, HIGH);
   last_character = c;
 
   // Turn off shift
-  mcp.digitalWrite(15, LOW);
+  mcp.digitalWrite(SHIFT, LOW);
+
+  // Turn off shift
+  mcp.digitalWrite(CODE, LOW);
+}
+
+void send_command(uint8_t c) {
+  code = true;
+  send_character(c);
+  code = false;
 }
 
 void setup() {
@@ -376,7 +401,12 @@ void setup() {
     mcp.digitalWrite(x, HIGH);
   }
   mcp.digitalWrite(15, LOW);
+
+  // Print out phone list
   readFile(LittleFS);
+
+  // Turn on auto-indent
+  send_command(AUTO_INDENT);
 }
 
 void loop() {
@@ -405,7 +435,12 @@ void loop() {
 
     // Send message
     for (int x = 0; x < (message.length()); x++) {
-      send_character(message[x]);
+      if (message[x] == '*')
+        send_command(BOLD);
+      else if (message[x] == '_')
+        send_command(UNDERLINE);
+      else
+        send_character(message[x]);
     }
     msg = false;
   }
