@@ -209,6 +209,22 @@ String phone;
 const char *pathToFile = "/phones.txt";
 bool msg = false;
 
+void readFile(fs::FS &fs) {
+  Serial.printf("Reading file: %s\r\n", pathToFile);
+
+  File file = fs.open(pathToFile);
+  if (!file || file.isDirectory()) {
+    Serial.println("- failed to open file for reading");
+    return;
+  }
+
+  Serial.println("- read from file:");
+  while (file.available()) {
+    Serial.write(file.read());
+  }
+  file.close();
+}
+
 String findCaller(fs::FS &fs, String n) {
   String name;
   File file = fs.open(pathToFile, "r");
@@ -235,7 +251,8 @@ void addCaller(fs::FS &fs, String number) {
     Serial.println("- failed to open file for appending");
     return;
   }
-  number = '\n' + number + ", UNKNOWN" + '\n';
+  //number = '\n' + number + ", UNKNOWN" + '\n';
+  number = '\n' + number + ", UNKNOWN";
   file.print(number);
   file.close();
 }
@@ -243,7 +260,7 @@ void addCaller(fs::FS &fs, String number) {
 // Send one character to the typewriter
 void send_character(uint8_t c) {
   static char last_character;
-  bool shift;
+  bool shift = false;
 
   // Check to see which sort of character is being sent.
   char *odds = strchr(odds_char, c);
@@ -276,23 +293,28 @@ void send_character(uint8_t c) {
     rx_pin_select |= 0x70;
   }
 
-  // Delay to allow for double characters
-  if (last_character == c) delay(500);
-
   // Select channel on demultiplexer from which to write signal
   mcp.writeGPIOA(rx_pin_select);
 
   // Select channel on multiplexer from which to read signal
-  mcp.writeGPIOB(tx_pin_select);
+  mcp.writeGPIOB(tx_pin_select | 0x40);
 
-  // Turn off shift (set on by default with write to GPIOB)
-  if (shift != true) mcp.digitalWrite(15, HIGH);
+  // Turn on shift (set off (LOW) by default with write to GPIOB)
+  if (shift == true) mcp.digitalWrite(15, HIGH);
+
+  if (shift == true) delay(300);
+
+  // Delay to allow for double characters
+  if (last_character == c) delay(50);
 
   // Strobe demulitplexer to type character
-  mcp.digitalWrite(11, LOW);
+  mcp.digitalWrite(14, LOW);
   delay(100);
-  mcp.digitalWrite(11, HIGH);
+  mcp.digitalWrite(14, HIGH);
   last_character = c;
+
+  // Turn off shift
+  mcp.digitalWrite(15, LOW);
 }
 
 void setup() {
@@ -353,6 +375,8 @@ void setup() {
     mcp.pinMode(x, OUTPUT);
     mcp.digitalWrite(x, HIGH);
   }
+  mcp.digitalWrite(15, LOW);
+  readFile(LittleFS);
 }
 
 void loop() {
