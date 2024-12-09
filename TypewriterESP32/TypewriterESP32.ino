@@ -1,10 +1,35 @@
-/*
+/* TODO
 Add lights
 
-STEP 1: Create a reverse proxy with ngrok
-Run ngrok on the local network using ngrok http 192.168.0.64:80 (I have run this as administrator)
+*/
 
-STEP 2: Paste the proxy address into the webhook section of Twilio
+/* NGROK AND TWILIO
+STEP 1 : Create a reverse proxy with ngrok
+(simple test)
+Run ngrok on the local network using $ sudo ngrok http 192.168.0.64:80 
+
+(running in background): 
+a) Configure tunnel and authtoken on yaml file
+  proto: http
+  addr: 192.168.0.64:80
+
+b) Install ngrok service  
+  sudo ngrok service install --config /home/teacher/.config/ngrok/ngrok.yml
+
+c) Start ngrok service
+  sudo ngrok service start
+
+d) Copy and paste webhook addrees
+  Find webhook address under endpoints on the ngrok web interface
+
+e) Paste webhook address into the webhook section on twilio and add /sms
+
+Problems:
+a) check service with 
+  sudo systemctl status ngrok
+
+b) remove service with 
+  sudo rm /etc/systemd/system/ngrok.service
 
 */
 
