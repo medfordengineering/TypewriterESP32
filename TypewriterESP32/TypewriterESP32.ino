@@ -1,7 +1,11 @@
 /*
 Add lights
-Double key
-Fix shift
+
+STEP 1: Create a reverse proxy with ngrok
+Run ngrok on the local network using ngrok http 192.168.0.64:80 (I have run this as administrator)
+
+STEP 2: Paste the proxy address into the webhook section of Twilio
+
 */
 
 #include <Adafruit_MCP23X17.h>
