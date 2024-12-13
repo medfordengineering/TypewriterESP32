@@ -96,7 +96,7 @@ const long utcOffsetInSeconds = EST;
 
 // Special keyboard characters that require a shift.
 const char odds_char[] = "!@#$%&*()_+:\"?";
-const char keys_char[] = "abcdefghijklmnopqrstuvwxyz.,-=;'1234567890";
+const char keys_char[] = "abcdefghijklmnopqrstuvwxyz.,-=;'1234567890/";
 const char caps_char[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const char ctrs_char[] = "\r, \b, \n";
 
@@ -172,7 +172,7 @@ uint8_t letters[128][2] = {
   { 6, 2 },  //61 =
   { 6, 2 },  //62 >
   { 0, 0 },  //63 ?
-  { 0, 0 },  //64 ¡
+  { 5, 8 },  //64 @
   { 0, 0 },  //65 NULL (Capital letters are accessed through a software shift)
   { 0, 0 },  //66 NULL
   { 0, 0 },  //67 NULL
@@ -307,6 +307,9 @@ void send_character(uint8_t c) {
   static char last_character;
   bool shift = false;
 
+  Serial.print(c, DEC);
+  Serial.print(':');
+
   // Check to see which sort of character is being sent.
   char *odds = strchr(odds_char, c);
   char *keys = strchr(keys_char, c);
@@ -394,17 +397,17 @@ void setup() {
     enum SMS data;
     const AsyncWebParameter *p;
 
-    data = BODY; // SMS message body
+    data = BODY;  // SMS message body
     p = request->getParam(data);
     body = p->value();
     Serial.println(body);
 
-    data = FROM; // SMS sender phone number
+    data = FROM;  // SMS sender phone number
     p = request->getParam(data);
     phone = p->value();
     Serial.println(phone);
 
-    msg = true; // We have a message
+    msg = true;  // We have a message
   });
 
   // Start server
