@@ -1,7 +1,10 @@
 /* TODO
 Add lights
 
+Turn off bold and underscore at end of 
+
 */
+
 
 /* NGROK AND TWILIO
 STEP 1 : Create a reverse proxy with ngrok
