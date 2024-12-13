@@ -391,17 +391,17 @@ void setup() {
     enum SMS data;
     const AsyncWebParameter *p;
 
-    data = BODY;
+    data = BODY; // SMS message body
     p = request->getParam(data);
     body = p->value();
     Serial.println(body);
 
-    data = FROM;
+    data = FROM; // SMS sender phone number
     p = request->getParam(data);
     phone = p->value();
     Serial.println(phone);
 
-    msg = true;
+    msg = true; // We have a message
   });
 
   // Start server
