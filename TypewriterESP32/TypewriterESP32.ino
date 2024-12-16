@@ -284,6 +284,7 @@ String findCaller(fs::FS &fs, String n) {
     Serial.println("No Saved Data!");
   }
 
+  // Read through the file line by line. If callers number is found, return the corresponding name.
   while (file.available()) {
     String line = file.readStringUntil('\n');
     if (line.indexOf(n) != -1) {
@@ -332,6 +333,7 @@ void send_character(uint8_t c) {
     shift = false;
   }
   // Serial.println(c);
+  // Each character corresponds to two bytes in letter array that write and read pins respectively
   uint8_t tx_pin_select = letters[c][0];
   uint8_t rx_pin_select = letters[c][1];
 
