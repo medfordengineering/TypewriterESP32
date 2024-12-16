@@ -100,6 +100,10 @@ const char keys_char[] = "abcdefghijklmnopqrstuvwxyz.,-=;'1234567890/";
 const char caps_char[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const char ctrs_char[] = "\r, \b, \n";
 
+/* Codes for SMS characters. The columns coorespond to write pins and read pins respectively. 
+The codes are a merge of GSM7 and ASCII which are both 0-127 character sets. It appears that Twilio
+defaults to ASCII over GSM7, but I am still waiting to hear back from them about this.
+*/
 uint8_t letters[128][2] = {
   { 0, 0 },  //0 @
   { 0, 0 },  //1 £
@@ -254,6 +258,7 @@ bool autoreturn = false;
 bool bold = false;
 bool underline = false;
 
+// Prints out the contents of the phone file on startup
 void readFile(fs::FS &fs) {
   Serial.printf("Reading file: %s\r\n", pathToFile);
 
@@ -270,6 +275,7 @@ void readFile(fs::FS &fs) {
   file.close();
 }
 
+// Determines if a callers number is in the phnoe file and returns a name, UNKNOWN or not found
 String findCaller(fs::FS &fs, String n) {
   String name;
   File file = fs.open(pathToFile, "r");
@@ -289,6 +295,7 @@ String findCaller(fs::FS &fs, String n) {
   return name;
 }
 
+// Adds a callers phone number to the database with a name listed as UNKNOWN
 void addCaller(fs::FS &fs, String number) {
 
   File file = fs.open(pathToFile, "a");
@@ -328,11 +335,10 @@ void send_character(uint8_t c) {
   uint8_t tx_pin_select = letters[c][0];
   uint8_t rx_pin_select = letters[c][1];
 
-  /*  There are two mulitpexers to accomodate 12 bits (eight on the lower and four on the upper)
-      The output of the lower mp is connected to channel 7 (a free channel) on the upper mp. To 
-      address the lower mp you must select that address 7 on the upper mp. To address the upper mp 
-      you need to subtract 8 and shift the bits by four to the ouptputs on the 23017 which is 
-      controlling the upper mp. Both mps are by default enabled.
+  /*  There are two 8-channel mulitpexers to accomodate 12 bits. This requires 6 address bits. Three for the lower MP and
+      3 for the upper MP. The output of the lower MP is connected to channel 7 (a free channel) on the upper MP. To address the 
+      lower MP you must select that address for the lower byte and 7 for the upper byte to access channel 7. To address the upper MP 
+      you need to subtract 8 and shift the bits by 4.
   */
   if (rx_pin_select > 7) {
     rx_pin_select -= 8;
@@ -347,15 +353,15 @@ void send_character(uint8_t c) {
   // Select channel on multiplexer from which to read signal and disable strobe with OR.
   mcp.writeGPIOB(tx_pin_select | 0x40);
 
-  // Turn on shift (set off (LOW) by default with write to GPIOB) give time to settle
+  // Turn on SHIFT (set off, LOW, by default with write to GPIOB) give time to settle
   if (shift == true) mcp.digitalWrite(SHIFT, HIGH);
   if (shift == true) delay(200);
 
-  // Turn on code (set off (LOW) by default with write to GPIOB) give time to settle
+  // Turn on CODE (set off, LOW, by default with write to GPIOB) give time to settle
   if (code == true) mcp.digitalWrite(CODE, HIGH);
   if (code == true) delay(200);
 
-  // Delay to allow for double characters
+  // Delay to allow for double characters. The typewriter by default rejects double characters when printed too quickly
   if (last_character == c) delay(50);
 
   // Strobe demulitplexer to type character
@@ -364,10 +370,10 @@ void send_character(uint8_t c) {
   mcp.digitalWrite(STROBE, HIGH);
   last_character = c;
 
-  // Turn off shift
+  // Turn off SHIFT
   mcp.digitalWrite(SHIFT, LOW);
 
-  // Turn off shift
+  // Turn off CODE
   mcp.digitalWrite(CODE, LOW);
 }
 
