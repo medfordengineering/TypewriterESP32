@@ -255,7 +255,7 @@ uint8_t letters[128][2] = {
 
 String body;
 String phone;
-String asg = "All systems go!\r";
+String asg = "All systems *go*!\r";
 const char *pathToFile = "/phones.txt";
 bool msg = false;
 bool code = false;
@@ -391,9 +391,19 @@ void send_command(uint8_t c) {
   code = false;
 }
 
-void tprint(String s){
-  int i;
-  while (i < s.length()) send_character(s[i++]);
+void tprint(String s) {
+  int i = 0;
+  Serial.print(s);
+  Serial.print('g');
+  while (i < s.length()) {
+    if (s[i] == '*')
+      send_command(BOLD);
+    else if (s[i] == '_')
+      send_command(UNDERLINE);
+    else
+      send_character(s[i]);
+    i++;
+  }
 }
 
 void setup() {
@@ -463,7 +473,7 @@ void setup() {
   // Set right margin
   tprint(asg);
 
-/*
+  /*
   delay(3000);
 
   send_character(MREL);
@@ -523,6 +533,7 @@ void loop() {
     String message = date + " " + time + " " + id + ": " + body + '\r';
 
     // Send message
+    /*
     for (int x = 0; x < (message.length()); x++) {
       if (message[x] == '*')
         send_command(BOLD);
@@ -530,7 +541,8 @@ void loop() {
         send_command(UNDERLINE);
       else
         send_character(message[x]);
-    }
+    }*/
+    tprint(message);
     msg = false;
   }
 
