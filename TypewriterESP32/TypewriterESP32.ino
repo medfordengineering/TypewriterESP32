@@ -63,6 +63,9 @@ b) remove service with
 #define BOLD 49
 #define UNDERLINE 17
 
+#define CPM 100     // Characters per millisecond
+#define MARGIN 96  // Total type margine
+
 // Establish server
 AsyncWebServer server(80);
 
@@ -470,38 +473,21 @@ void setup() {
   // Print out phone list
   readFile(LittleFS);
 
-  // Set right margin
   tprint(asg);
+  delay(asg.length() * CPM);
 
-  /*
-  delay(3000);
-
-  send_character(MREL);
-  for (i = 0; i < 5; i++) {
-    send_character(BSPC);
-  }
-
-  delay(3000);
-  send_character(RMAR);
-
-  for (i = 0; i < 37; i++) {
+  // Set right margin
+  for (i = 0; i < MARGIN - 4; i++) {
     send_character('.');
   }
-
-  delay(3000);
-
+  delay(MARGIN * CPM);
   send_character(MREL);
-  for (i = 0; i < 63; i++) {
+  for (i = 0; i < 6; i++) {
     send_character('.');
   }
-
-  delay(5000);
   send_character(RMAR);
   send_character('\r');
 
-  //while (1)
-  // ;
-*/
   // Turn on auto-indent
   send_command(AUTO_INDENT);
 }
