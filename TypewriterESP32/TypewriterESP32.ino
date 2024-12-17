@@ -5,7 +5,6 @@ Turn off bold and underscore at end of
 
 */
 
-
 /* NGROK AND TWILIO
 STEP 1 : Create a reverse proxy with ngrok
 (simple test)
@@ -52,7 +51,13 @@ b) remove service with
 
 #define SHIFT 15
 #define STROBE 14
+
+// Key codes
 #define CODE 13
+#define LMAR 18
+#define RMAR 19
+#define MREL 20
+#define BSPC 21
 
 #define AUTO_INDENT 50
 #define BOLD 49
@@ -125,11 +130,11 @@ uint8_t letters[128][2] = {
   { 6, 8 },  //15 å
   { 0, 0 },  //16 DELTA
   { 5, 9 },  //17 LOW LINE
-  { 0, 0 },  //18 PHI
-  { 0, 0 },  //19 GAMMA
+  { 6, 8 },  //18 PHI (LEFT MARGIN)
+  { 2, 8 },  //19 GAMMA (RIGHT MARGIN)
 
-  { 0, 0 },  //20 LAMBDA
-  { 0, 0 },  //21 OMEGA
+  { 5, 9 },  //20 LAMBDA (MARGIN RELEASE)
+  { 5, 2 },  //21 OMEGA (BACK SPACE)
   { 0, 0 },  //22 PI
   { 0, 0 },  //23 PSI
   { 0, 0 },  //24 SIGMA
@@ -250,6 +255,7 @@ uint8_t letters[128][2] = {
 
 String body;
 String phone;
+String asg = "All systems go!\r";
 const char *pathToFile = "/phones.txt";
 bool msg = false;
 bool code = false;
@@ -385,7 +391,13 @@ void send_command(uint8_t c) {
   code = false;
 }
 
+void tprint(String s){
+  int i;
+  while (i < s.length()) send_character(s[i++]);
+}
+
 void setup() {
+  int i;
   Serial.begin(115200);
   delay(4000);
 
@@ -436,7 +448,7 @@ void setup() {
     return;
   }
 
-  Serial.println("All Systems Go!");
+  Serial.println(asg);
 
   // Set all pins on I2C expander to high
   for (int x = 0; x < 16; x++) {
@@ -448,6 +460,38 @@ void setup() {
   // Print out phone list
   readFile(LittleFS);
 
+  // Set right margin
+  tprint(asg);
+
+/*
+  delay(3000);
+
+  send_character(MREL);
+  for (i = 0; i < 5; i++) {
+    send_character(BSPC);
+  }
+
+  delay(3000);
+  send_character(RMAR);
+
+  for (i = 0; i < 37; i++) {
+    send_character('.');
+  }
+
+  delay(3000);
+
+  send_character(MREL);
+  for (i = 0; i < 63; i++) {
+    send_character('.');
+  }
+
+  delay(5000);
+  send_character(RMAR);
+  send_character('\r');
+
+  //while (1)
+  // ;
+*/
   // Turn on auto-indent
   send_command(AUTO_INDENT);
 }
@@ -459,6 +503,8 @@ void loop() {
   }
 
   if (msg == true) {
+
+    Serial.print(body);
 
     // Get date and time
     String formattedDate = timeClient.getFormattedDate();
