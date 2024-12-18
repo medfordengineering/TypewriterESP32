@@ -42,9 +42,7 @@ b) remove service with
 #include <LittleFS.h>
 #include <NTPClient.h>
 #include <WiFiUdp.h>
-
-#define WIFI_SSID "EngineeringSubNet"
-#define WIFI_PASS "password"
+#include <secrets.h>
 
 #define EST -18000
 #define EDT -14400
@@ -445,13 +443,6 @@ void setup() {
   tprint(WiFi.localIP().toString());
   tprint("\r");
 
-  /*
-  Serial.println("");
-  Serial.println("WiFi connected.");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
-  */
-
   timeClient.setTimeOffset(utcOffsetInSeconds);
 
   server.on("/sms", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -497,19 +488,6 @@ void setup() {
   tprint(asg);
   delay(asg.length() * CPM);
 
-  // Set right margin
-/*
-  for (i = 0; i < MARGIN - 4; i++) {
-    send_character('.');
-  }
-  delay(MARGIN * CPM);
-  send_character(MREL);
-  for (i = 0; i < 6; i++) {
-    send_character('.');
-  }
-  send_character(RMAR);
-  send_character('\r');
-*/
   // Turn on auto-indent
   send_command(AUTO_INDENT);
 }
