@@ -323,9 +323,6 @@ void send_character(uint8_t c) {
   static char last_character;
   bool shift = false;
 
-  Serial.print(c, DEC);
-  Serial.print(':');
-
   // Check to see which sort of character is being sent.
   char *odds = strchr(odds_char, c);
   char *keys = strchr(keys_char, c);
@@ -340,7 +337,7 @@ void send_character(uint8_t c) {
   } else {
     shift = false;
   }
-  // Serial.println(c);
+
   // Each character corresponds to two bytes in letter array that write and read pins respectively
   uint8_t tx_pin_select = letters[c][0];
   uint8_t rx_pin_select = letters[c][1];
