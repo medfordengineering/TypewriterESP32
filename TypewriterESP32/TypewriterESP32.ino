@@ -59,11 +59,12 @@ b) remove service with
 #define MREL 20
 #define BSPC 21
 
-#define AUTO_INDENT 50
-#define BOLD 49
-#define UNDERLINE 17
+#define AUTO_INDENT 50  //2
+#define BOLD 49         //1
+#define UNDERLINE 17    //MAR REL
+#define CENTER 99       //C
 
-#define CPM 100     // Characters per millisecond
+#define CPM 100    // Characters per millisecond
 #define MARGIN 96  // Total type margine
 
 // Establish server
@@ -258,7 +259,7 @@ uint8_t letters[128][2] = {
 
 String body;
 String phone;
-String asg = "All systems *go*!\r";
+String asg = "System Ready!\r";
 const char *pathToFile = "/phones.txt";
 bool msg = false;
 bool code = false;
@@ -396,8 +397,6 @@ void send_command(uint8_t c) {
 
 void tprint(String s) {
   int i = 0;
-  Serial.print(s);
-  Serial.print('g');
   while (i < s.length()) {
     if (s[i] == '*')
       send_command(BOLD);
@@ -411,18 +410,47 @@ void tprint(String s) {
 
 void setup() {
   int i;
+
   Serial.begin(115200);
   delay(4000);
 
+  // Initialize typewriter
+  if (!mcp.begin_I2C()) {
+    Serial.println("No I2C.");
+    return;
+  }
+
+  // Set typewriter key control to neutral
+  for (int x = 0; x < 16; x++) {
+    mcp.pinMode(x, OUTPUT);
+    mcp.digitalWrite(x, HIGH);
+  }
+
+  // Turns shift off
+  mcp.digitalWrite(SHIFT, LOW);
+
+  tprint("\r");
+  send_command(CENTER);
+  tprint("Panasonic T36 Enabled.\r");
+
+  // Start WIFI
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print(".");
+    tprint(".");
   }
+
+  tprint("Connected to WiFi.\r");
+  tprint("IP address: ");
+  tprint(WiFi.localIP().toString());
+  tprint("\r");
+
+  /*
   Serial.println("");
   Serial.println("WiFi connected.");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
+  */
 
   timeClient.setTimeOffset(utcOffsetInSeconds);
 
@@ -446,14 +474,12 @@ void setup() {
   // Start server
   server.begin();
 
+  tprint("Server started.\r");
+
   // Start time
   timeClient.begin();
 
-  // Start I2C
-  if (!mcp.begin_I2C()) {
-    Serial.println("No I2C.");
-    return;
-  }
+  tprint("NTP client estalished.\r");
 
   // Start file system
   if (!LittleFS.begin()) {
@@ -461,14 +487,9 @@ void setup() {
     return;
   }
 
-  Serial.println(asg);
+  tprint("File System Initialized.\r");
 
-  // Set all pins on I2C expander to high
-  for (int x = 0; x < 16; x++) {
-    mcp.pinMode(x, OUTPUT);
-    mcp.digitalWrite(x, HIGH);
-  }
-  mcp.digitalWrite(15, LOW);
+  Serial.println(asg);
 
   // Print out phone list
   readFile(LittleFS);
@@ -477,6 +498,7 @@ void setup() {
   delay(asg.length() * CPM);
 
   // Set right margin
+/*
   for (i = 0; i < MARGIN - 4; i++) {
     send_character('.');
   }
@@ -487,7 +509,7 @@ void setup() {
   }
   send_character(RMAR);
   send_character('\r');
-
+*/
   // Turn on auto-indent
   send_command(AUTO_INDENT);
 }
@@ -519,15 +541,6 @@ void loop() {
     String message = date + " " + time + " " + id + ": " + body + '\r';
 
     // Send message
-    /*
-    for (int x = 0; x < (message.length()); x++) {
-      if (message[x] == '*')
-        send_command(BOLD);
-      else if (message[x] == '_')
-        send_command(UNDERLINE);
-      else
-        send_character(message[x]);
-    }*/
     tprint(message);
     msg = false;
   }
