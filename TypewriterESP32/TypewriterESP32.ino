@@ -21,14 +21,18 @@ b) Install ngrok service
 c) Start ngrok service
   sudo ngrok service start
 
+
 d) Copy and paste webhook addrees
   Find webhook address under endpoints on the ngrok web interface
 
 e) Paste webhook address into the webhook section on twilio and add /sms
+Any new webhook MUST be placed in the Messageing Service SMSTypewriter NOT in the NOT under active numbers which is superceeded by the Messaging
+Service. 
 
 Problems:
 a) check service with 
-  sudo systemctl status ngrok
+ 
+ 
 
 b) remove service with 
   sudo rm /etc/systemd/system/ngrok.service
@@ -407,7 +411,7 @@ void setup() {
   int i;
 
   Serial.begin(115200);
-  delay(4000);
+  delay(2000);
 
   // Initialize typewriter
   if (!mcp.begin_I2C()) {
@@ -472,10 +476,10 @@ void setup() {
   // Start file system
   if (!LittleFS.begin()) {
     Serial.println("No FS.");
+    tprint("Error: No file system.");
     return;
-  }
-
-  tprint("File System Initialized.\r");
+  } else
+    tprint("File System Initialized.\r");
 
   Serial.println(asg);
 
@@ -490,10 +494,19 @@ void setup() {
 }
 
 void loop() {
+  static uint32_t timeThis, timeLast = 0;
+  static uint8_t watch_dog = 0;
 
   while (!timeClient.update()) {
     timeClient.forceUpdate();
   }
+
+   timeThis = millis();
+  if (timeThis - timeLast >= 2000) {
+    Serial.println(watch_dog++);
+    timeLast = timeThis;
+  }
+
 
   if (msg == true) {
 
