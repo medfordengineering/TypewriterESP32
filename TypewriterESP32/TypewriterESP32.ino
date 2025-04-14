@@ -1,7 +1,11 @@
 /* TODO
 Add lights
 
-Turn off bold and underscore at end of 
+Turn off bold and underscore at end of line
+
+Set up daylight savings time
+
+Set up return for long strings.
 
 */
 
@@ -494,19 +498,10 @@ void setup() {
 }
 
 void loop() {
-  static uint32_t timeThis, timeLast = 0;
-  static uint8_t watch_dog = 0;
 
   while (!timeClient.update()) {
     timeClient.forceUpdate();
   }
-
-   timeThis = millis();
-  if (timeThis - timeLast >= 2000) {
-    Serial.println(watch_dog++);
-    timeLast = timeThis;
-  }
-
 
   if (msg == true) {
 
