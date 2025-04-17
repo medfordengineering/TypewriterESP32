@@ -7,10 +7,13 @@ Set up daylight savings time
 
 Set up return for long strings.
 
+Only allow known texters
+
 */
 
 /* NGROK AND TWILIO
 STEP 1 : Create a reverse proxy with ngrok
+
 (simple test)
 Run ngrok on the local network using $ sudo ngrok http 192.168.0.64:80 
 
@@ -71,7 +74,7 @@ b) remove service with
 #define CENTER 99       //C
 
 #define CPM 100    // Characters per millisecond
-#define MARGIN 96  // Total type margine
+#define MARGIN 88  // Total type margine
 
 // Establish server
 AsyncWebServer server(80);
@@ -274,6 +277,8 @@ bool autoreturn = false;
 bool bold = false;
 bool underline = false;
 
+uint8_t carriage_index;
+
 // Prints out the contents of the phone file on startup
 void readFile(fs::FS &fs) {
   Serial.printf("Reading file: %s\r\n", pathToFile);
@@ -390,6 +395,13 @@ void send_character(uint8_t c) {
 
   // Turn off CODE
   mcp.digitalWrite(CODE, LOW);
+
+// Check if carriage is at the paper margin, if so, reset the carriage counter and send a return
+  if (carriage_index++ > MARGIN) {
+    carriage_index = 0;
+    send_character('-');
+    send_character('\r');
+  }
 }
 
 void send_command(uint8_t c) {
@@ -401,6 +413,8 @@ void send_command(uint8_t c) {
 void tprint(String s) {
   int i = 0;
   while (i < s.length()) {
+    if (s[i] == '\r') carriage_index = 0;
+      
     if (s[i] == '*')
       send_command(BOLD);
     else if (s[i] == '_')
@@ -494,7 +508,7 @@ void setup() {
   delay(asg.length() * CPM);
 
   // Turn on auto-indent
-  send_command(AUTO_INDENT);
+  // send_command(AUTO_INDENT);
 }
 
 void loop() {
