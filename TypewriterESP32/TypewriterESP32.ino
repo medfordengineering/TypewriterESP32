@@ -5,9 +5,9 @@ Turn off bold and underscore at end of line
 
 Set up daylight savings time
 
-Set up return for long strings.
+Set up return for long strings. WORKING
 
-Only allow known texters
+Only allow known texters. WORKING
 
 */
 
@@ -38,8 +38,6 @@ Service.
 
 Problems:
 a) check service with 
- 
- 
 
 b) remove service with 
   sudo rm /etc/systemd/system/ngrok.service
@@ -272,6 +270,7 @@ String asg = "System Ready!\r";
 const char *pathToFile = "/phones.txt";
 bool msg = false;
 bool code = false;
+bool valid_user = false;
 
 bool autoreturn = false;
 bool bold = false;
@@ -325,7 +324,6 @@ void addCaller(fs::FS &fs, String number) {
     Serial.println("- failed to open file for appending");
     return;
   }
-  //number = '\n' + number + ", UNKNOWN" + '\n';
   number = '\n' + number + ", UNKNOWN";
   file.print(number);
   file.close();
@@ -396,7 +394,7 @@ void send_character(uint8_t c) {
   // Turn off CODE
   mcp.digitalWrite(CODE, LOW);
 
-// Check if carriage is at the paper margin, if so, reset the carriage counter and send a return
+  // Check if carriage is at the paper margin, if so, reset the carriage counter and send a return
   if (carriage_index++ > MARGIN) {
     carriage_index = 0;
     send_character('-');
@@ -413,8 +411,9 @@ void send_command(uint8_t c) {
 void tprint(String s) {
   int i = 0;
   while (i < s.length()) {
+    // Reset the carriage counter each time a return is found.
     if (s[i] == '\r') carriage_index = 0;
-      
+
     if (s[i] == '*')
       send_command(BOLD);
     else if (s[i] == '_')
@@ -529,16 +528,19 @@ void loop() {
 
     // Get name of sender or use phone number
     String id = findCaller(LittleFS, phone);
-    if (id == NULL) {
+    if ((id == NULL) || (id == "UNKNOWN")) {
       addCaller(LittleFS, phone);
       id = phone;
-    }
+      valid_user = false;
+    } else
+      valid_user = true;
 
     // Build message
     String message = date + " " + time + " " + id + ": " + body + '\r';
 
     // Send message
-    tprint(message);
+    if (valid_user == true)
+      tprint(message);
     msg = false;
   }
 
