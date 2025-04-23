@@ -1,9 +1,11 @@
 /* TODO
 Add lights
 
-Turn off bold and underscore at end of line
+Turn off bold and underscore at end of line. WORKING
 
 Set up daylight savings time
+
+Split getDate and getTime
 
 Set up return for long strings. WORKING
 
@@ -66,6 +68,7 @@ b) remove service with
 #define MREL 20
 #define BSPC 21
 
+// Formating commands
 #define AUTO_INDENT 50  //2
 #define BOLD 49         //1
 #define UNDERLINE 17    //MAR REL
@@ -74,17 +77,20 @@ b) remove service with
 #define CPM 100    // Characters per millisecond
 #define MARGIN 88  // Total type margine
 
-// Establish server
+#define MAR 3
+#define NOV 11
+
+// Server object
 AsyncWebServer server(80);
 
-// Establish I2C expander
+// I2C expander object
 Adafruit_MCP23X17 mcp;
 
-// Establish time
+// Time objects
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP);
 
-// Itemize 20 parameters in SMS message
+// The 20 parameters in an SMS message
 enum SMS {
   TOCOUNTRY,
   TOSTATE,
@@ -266,15 +272,24 @@ uint8_t letters[128][2] = {
 
 String body;
 String phone;
+
 String asg = "System Ready!\r";
 const char *pathToFile = "/phones.txt";
+
+// Time variables
+String date;
+String timeofday;
+int8_t dayofweek;
+uint8_t month;
+int8_t day;
+
 bool msg = false;
 bool code = false;
 bool valid_user = false;
-
 bool autoreturn = false;
 bool bold = false;
 bool underline = false;
+bool daylightsavings = false;
 
 uint8_t carriage_index;
 
@@ -295,7 +310,7 @@ void readFile(fs::FS &fs) {
   file.close();
 }
 
-// Determines if a callers number is in the phnoe file and returns a name, UNKNOWN or not found
+// Determines if a callers number is in the phnoe file and returns a name, UNKNOWN or NULL for not found
 String findCaller(fs::FS &fs, String n) {
   String name;
   File file = fs.open(pathToFile, "r");
@@ -411,17 +426,53 @@ void send_command(uint8_t c) {
 void tprint(String s) {
   int i = 0;
   while (i < s.length()) {
-    // Reset the carriage counter each time a return is found.
-    if (s[i] == '\r') carriage_index = 0;
 
-    if (s[i] == '*')
+    if (s[i] == '\r') carriage_index = 0;  // Reset the carriage counter each time a return is found.
+
+    if (s[i] == '*') {
+      bold = !bold;  // Set state of bold in case a user forgets the second asterix
       send_command(BOLD);
-    else if (s[i] == '_')
+    } else if (s[i] == '_') {
+      underline = !underline;  // Set the state of underline in a user forgets the second underline
       send_command(UNDERLINE);
-    else
+    } else
       send_character(s[i]);
     i++;
   }
+}
+
+void setDateTime() {
+  getDateTime();
+  if ((month > MAR) && (month < NOV)) {
+    daylightsavings = true;
+  } else if ((month == MAR) && ((day - dayofweek) >= 8)) {
+    daylightsavings = true;
+  } else if ((month == NOV) && ((day - dayofweek) <= 1)) {
+    daylightsavings = true;
+  } else {
+    daylightsavings = false;
+  }
+
+  if (daylightsavings == true)
+    timeClient.setTimeOffset(EDT);
+  else
+    timeClient.setTimeOffset(EST);
+}
+
+void getDateTime() {
+  while (!timeClient.update()) {
+    timeClient.forceUpdate();
+  }
+  String formattedDate = timeClient.getFormattedDate();
+  int splitT = formattedDate.indexOf("T");
+  date = formattedDate.substring(2, splitT);
+  timeofday = formattedDate.substring(splitT + 1, formattedDate.length() - 4);
+  dayofweek = timeClient.getDay();
+  month = date.substring(3, 5).toInt();
+  day = date.substring(6, 8).toInt();
+  // Serial.printf("date: %s\r\n", date);
+  // Serial.printf("time: %s\r\n", timeofday);
+  // Serial.printf("dayweek: %d and month: %d and day: %d\r\n", dayofweek, month, day);
 }
 
 void setup() {
@@ -461,8 +512,6 @@ void setup() {
   tprint(WiFi.localIP().toString());
   tprint("\r");
 
-  timeClient.setTimeOffset(utcOffsetInSeconds);
-
   server.on("/sms", HTTP_GET, [](AsyncWebServerRequest *request) {
     enum SMS data;
     const AsyncWebParameter *p;
@@ -488,6 +537,8 @@ void setup() {
   // Start time
   timeClient.begin();
 
+  setDateTime();
+
   tprint("NTP client estalished.\r");
 
   // Start file system
@@ -512,19 +563,18 @@ void setup() {
 
 void loop() {
 
-  while (!timeClient.update()) {
-    timeClient.forceUpdate();
-  }
+
 
   if (msg == true) {
 
-    Serial.print(body);
+    // Turn off bold and underline if either were left on from previous message
+    if (bold) send_command(BOLD);
+    if (underline) send_command(UNDERLINE);
 
+    //Serial.print(body);
+
+    getDateTime();
     // Get date and time
-    String formattedDate = timeClient.getFormattedDate();
-    int splitT = formattedDate.indexOf("T");
-    String date = formattedDate.substring(2, splitT);
-    String time = formattedDate.substring(splitT + 1, formattedDate.length() - 4);
 
     // Get name of sender or use phone number
     String id = findCaller(LittleFS, phone);
@@ -536,18 +586,13 @@ void loop() {
       valid_user = true;
 
     // Build message
-    String message = date + " " + time + " " + id + ": " + body + '\r';
+    String message = date + " " + timeofday + " " + id + ": " + body + '\r';
 
-    // Send message
+    // Send message only if valid user
     if (valid_user == true)
       tprint(message);
+
+    Serial.print(message);
     msg = false;
   }
-
-  /* Check this every 24hours
-  if (((month > MAR) && (month < NOV)) || ((month == MAR) && (previousSunday >= MAGIC_NUMBER)) || ((month == MAR) && (day > WEEK * 2)) || ((month == NOV) && (previousSunday < 1)))
-    timeClient.setTimeOffset(EDT);
-  else
-    timeClient.setTimeOffset(EST);
-    */
 }
