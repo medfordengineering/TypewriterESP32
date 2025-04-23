@@ -3,7 +3,9 @@ Add lights
 
 Turn off bold and underscore at end of line. WORKING
 
-Set up daylight savings time
+Set up daylight savings time: WORKING
+
+Fix message crash with polling or buffer?
 
 Split getDate and getTime
 
@@ -55,8 +57,8 @@ b) remove service with
 #include <WiFiUdp.h>
 #include <secrets.h>
 
-#define EST -18000
-#define EDT -14400
+#define EST -18000  // offset in seconds from GMT
+#define EDT -14400  // offset in seconds from GMT
 
 #define SHIFT 15
 #define STROBE 14
@@ -289,7 +291,7 @@ bool valid_user = false;
 bool autoreturn = false;
 bool bold = false;
 bool underline = false;
-bool daylightsavings = false;
+//bool daylightsavings = false;
 
 uint8_t carriage_index;
 
@@ -443,17 +445,11 @@ void tprint(String s) {
 
 void setDateTime() {
   getDateTime();
-  if ((month > MAR) && (month < NOV)) {
-    daylightsavings = true;
-  } else if ((month == MAR) && ((day - dayofweek) >= 8)) {
-    daylightsavings = true;
-  } else if ((month == NOV) && ((day - dayofweek) <= 1)) {
-    daylightsavings = true;
-  } else {
-    daylightsavings = false;
-  }
-
-  if (daylightsavings == true)
+  if ((month > MAR) && (month < NOV))
+    timeClient.setTimeOffset(EDT);
+  else if ((month == MAR) && ((day - dayofweek) >= 8))
+    timeClient.setTimeOffset(EDT);
+  else if ((month == NOV) && ((day - dayofweek) <= 1))
     timeClient.setTimeOffset(EDT);
   else
     timeClient.setTimeOffset(EST);
@@ -470,9 +466,6 @@ void getDateTime() {
   dayofweek = timeClient.getDay();
   month = date.substring(3, 5).toInt();
   day = date.substring(6, 8).toInt();
-  // Serial.printf("date: %s\r\n", date);
-  // Serial.printf("time: %s\r\n", timeofday);
-  // Serial.printf("dayweek: %d and month: %d and day: %d\r\n", dayofweek, month, day);
 }
 
 void setup() {
@@ -519,12 +512,12 @@ void setup() {
     data = BODY;  // SMS message body
     p = request->getParam(data);
     body = p->value();
-    Serial.println(body);
+    //Serial.println(body);
 
     data = FROM;  // SMS sender phone number
     p = request->getParam(data);
     phone = p->value();
-    Serial.println(phone);
+    //Serial.println(phone);
 
     msg = true;  // We have a message
   });
@@ -563,18 +556,14 @@ void setup() {
 
 void loop() {
 
-
-
   if (msg == true) {
 
     // Turn off bold and underline if either were left on from previous message
     if (bold) send_command(BOLD);
     if (underline) send_command(UNDERLINE);
 
-    //Serial.print(body);
-
-    getDateTime();
     // Get date and time
+    getDateTime();
 
     // Get name of sender or use phone number
     String id = findCaller(LittleFS, phone);
@@ -592,7 +581,7 @@ void loop() {
     if (valid_user == true)
       tprint(message);
 
-    Serial.print(message);
+    Serial.println(message);
     msg = false;
   }
 }
