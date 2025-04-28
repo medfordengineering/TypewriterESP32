@@ -527,13 +527,6 @@ void setup() {
 
   tprint("Server started.\r");
 
-  // Start time
-  timeClient.begin();
-
-  setDateTime();
-
-  tprint("NTP client estalished.\r");
-
   // Start file system
   if (!LittleFS.begin()) {
     Serial.println("No FS.");
@@ -541,6 +534,18 @@ void setup() {
     return;
   } else
     tprint("File System Initialized.\r");
+
+  // Start time
+  timeClient.begin();
+
+  setDateTime();
+
+  tprint("NTP client estalished.\r");
+
+  // Print time
+  getDateTime();
+  String timestamp = date + " " + timeofday + '\r';
+  tprint(timestamp);
 
   Serial.println(asg);
 
