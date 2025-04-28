@@ -85,6 +85,9 @@ b) remove service with
 // Server object
 AsyncWebServer server(80);
 
+const char *PARAM_NAME = "user_name";
+const char *PARAM_NUMBER = "user_number";
+
 // I2C expander object
 Adafruit_MCP23X17 mcp;
 
@@ -341,8 +344,20 @@ void addCaller(fs::FS &fs, String number) {
     Serial.println("- failed to open file for appending");
     return;
   }
-  number = '\n' + number + ", UNKNOWN";
+  number = '\n' + number + ", UNKNOWN <br/>";
   file.print(number);
+  file.close();
+}
+
+void addNewUser(fs::FS &fs, String number, String name) {
+
+  File file = fs.open(pathToFile, "a");
+  if (!file) {
+    Serial.println("- failed to open file for appending");
+    return;
+  }
+  String newuser = '\n' + number + ", " + name + " <br/>";
+  file.print(newuser);
   file.close();
 }
 
@@ -520,6 +535,37 @@ void setup() {
     //Serial.println(phone);
 
     msg = true;  // We have a message
+  });
+
+  // Route for root / web page
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+    Serial.println("html");
+    request->send(LittleFS, "/index.html", "text/html");
+    //request->send(SPIFFS, "/index.html", String(), false, processor);
+  });
+
+  // Route for root / web page
+  server.on("/phonenumber", HTTP_GET, [](AsyncWebServerRequest *request) {
+    Serial.println("html");
+    request->send(LittleFS, "/phonenumber.html", "text/html");
+  });
+
+  // Route to load style.css file
+  server.on("/styles.css", HTTP_GET, [](AsyncWebServerRequest *request) {
+    Serial.println("css");
+    request->send(LittleFS, "/styles.css", "text/css");
+  });
+
+  server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String inputName;
+    String inputNumber;
+    if (request->hasParam(PARAM_NAME)) {
+      inputName = request->getParam(PARAM_NAME)->value();
+      inputNumber = request->getParam(PARAM_NUMBER)->value();
+    }
+    addNewUser(LittleFS, inputNumber, inputName);
+    Serial.println(inputName);
+    request->send(200, "text/html", "HTTP GET request sent to your ESP on input field (" + inputNumber + ") with value: " + inputName + "<br><a href=\"/\">Return to Home Page</a>");
   });
 
   // Start server
