@@ -9,6 +9,10 @@ Fix message crash with polling or buffer?
 
 Split getDate and getTime
 
+Combine AddNewUser and AddName
+
+Allow easy add of users
+
 Set up return for long strings. WORKING
 
 Only allow known texters. WORKING
@@ -279,7 +283,8 @@ String body;
 String phone;
 
 String asg = "System Ready!\r";
-const char *pathToFile = "/phones.txt";
+//const char *pathToUserPage = "/data/UserPage.html";
+const char *pathToNumbers = "/numbers.html";
 
 // Time variables
 String date;
@@ -300,9 +305,9 @@ uint8_t carriage_index;
 
 // Prints out the contents of the phone file on startup
 void readFile(fs::FS &fs) {
-  Serial.printf("Reading file: %s\r\n", pathToFile);
+  Serial.printf("Reading file: %s\r\n", pathToNumbers);
 
-  File file = fs.open(pathToFile);
+  File file = fs.open(pathToNumbers);
   if (!file || file.isDirectory()) {
     Serial.println("- failed to open file for reading");
     return;
@@ -318,7 +323,7 @@ void readFile(fs::FS &fs) {
 // Determines if a callers number is in the phnoe file and returns a name, UNKNOWN or NULL for not found
 String findCaller(fs::FS &fs, String n) {
   String name;
-  File file = fs.open(pathToFile, "r");
+  File file = fs.open(pathToNumbers, "r");
 
   if (!file) {
     Serial.println("No Saved Data!");
@@ -326,7 +331,8 @@ String findCaller(fs::FS &fs, String n) {
 
   // Read through the file line by line. If callers number is found, return the corresponding name.
   while (file.available()) {
-    String line = file.readStringUntil('\n');
+   // String line = file.readStringUntil('\n');
+   String line = file.readStringUntil('<');
     if (line.indexOf(n) != -1) {
       name = line.substring(line.indexOf(',') + 1);
       name.trim();
@@ -339,7 +345,7 @@ String findCaller(fs::FS &fs, String n) {
 // Adds a callers phone number to the database with a name listed as UNKNOWN
 void addCaller(fs::FS &fs, String number) {
 
-  File file = fs.open(pathToFile, "a");
+  File file = fs.open(pathToNumbers, "a");
   if (!file) {
     Serial.println("- failed to open file for appending");
     return;
@@ -351,7 +357,7 @@ void addCaller(fs::FS &fs, String number) {
 
 void addNewUser(fs::FS &fs, String number, String name) {
 
-  File file = fs.open(pathToFile, "a");
+  File file = fs.open(pathToNumbers, "a");
   if (!file) {
     Serial.println("- failed to open file for appending");
     return;
@@ -537,22 +543,24 @@ void setup() {
     msg = true;  // We have a message
   });
 
-  // Route for root / web page
+  // Route for root /  index web page
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-    Serial.println("html");
     request->send(LittleFS, "/index.html", "text/html");
     //request->send(SPIFFS, "/index.html", String(), false, processor);
   });
 
-  // Route for root / web page
-  server.on("/phonenumber", HTTP_GET, [](AsyncWebServerRequest *request) {
-    Serial.println("html");
-    request->send(LittleFS, "/phonenumber.html", "text/html");
+  // Route for Authorized Users Page
+  server.on("/userpage", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(LittleFS, "/UserPage.html", "text/html");
+  });
+
+  // Route for user numbers
+  server.on("/numbers", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(LittleFS, pathToNumbers, "text/html");
   });
 
   // Route to load style.css file
   server.on("/styles.css", HTTP_GET, [](AsyncWebServerRequest *request) {
-    Serial.println("css");
     request->send(LittleFS, "/styles.css", "text/css");
   });
 
@@ -618,9 +626,12 @@ void loop() {
 
     // Get name of sender or use phone number
     String id = findCaller(LittleFS, phone);
-    if ((id == NULL) || (id == "UNKNOWN")) {
-      addCaller(LittleFS, phone);
-      id = phone;
+    // if ((id == NULL) || (id == "UNKNOWN")) {
+    if (id == NULL) {
+      addNewUser(LittleFS, phone, "UNKNOWN");
+      // id = phone;
+      valid_user = false;
+    } else if (id == "UNKNOWN") {
       valid_user = false;
     } else
       valid_user = true;
