@@ -1,6 +1,6 @@
 * {
   font-family: "Reem Kufi", sans-serif;
-  text-transform: uppercase;
+  
 }
 body {
   width:100%;
@@ -30,10 +30,6 @@ legend {
 input[type="submit"] {
   background-color: transparent;
   border-radius: 4px;
-}
-embed {
-  display: flex;
-  justify-content: center;
 }
 .center {
   display: flex;

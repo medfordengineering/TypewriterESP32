@@ -303,6 +303,7 @@ bool underline = false;
 
 uint8_t carriage_index;
 
+/*
 // Prints out the contents of the phone file on startup
 void readFile(fs::FS &fs) {
   Serial.printf("Reading file: %s\r\n", pathToNumbers);
@@ -318,7 +319,7 @@ void readFile(fs::FS &fs) {
     Serial.write(file.read());
   }
   file.close();
-}
+}*/
 
 // Determines if a callers number is in the phnoe file and returns a name, UNKNOWN or NULL for not found
 String findCaller(fs::FS &fs, String n) {
@@ -341,7 +342,7 @@ String findCaller(fs::FS &fs, String n) {
   file.close();
   return name;
 }
-
+/*
 // Adds a callers phone number to the database with a name listed as UNKNOWN
 void addCaller(fs::FS &fs, String number) {
 
@@ -353,7 +354,7 @@ void addCaller(fs::FS &fs, String number) {
   number = '\n' + number + ", UNKNOWN <br/>";
   file.print(number);
   file.close();
-}
+}*/
 
 void addNewUser(fs::FS &fs, String number, String name) {
 
@@ -546,7 +547,6 @@ void setup() {
   // Route for root /  index web page
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
     request->send(LittleFS, "/index.html", "text/html");
-    //request->send(SPIFFS, "/index.html", String(), false, processor);
   });
 
   // Route for Authorized Users Page
@@ -572,8 +572,7 @@ void setup() {
       inputNumber = request->getParam(PARAM_NUMBER)->value();
     }
     addNewUser(LittleFS, inputNumber, inputName);
-    Serial.println(inputName);
-    request->send(200, "text/html", "HTTP GET request sent to your ESP on input field (" + inputNumber + ") with value: " + inputName + "<br><a href=\"/\">Return to Home Page</a>");
+    request->send(200, "text/html", "New user: " + inputName + ", " + inputNumber + "<br><a href=\"/\">Return to Home Page</a>");
   });
 
   // Start server
@@ -604,7 +603,7 @@ void setup() {
   Serial.println(asg);
 
   // Print out phone list
-  readFile(LittleFS);
+ // readFile(LittleFS);
 
   tprint(asg);
   delay(asg.length() * CPM);
