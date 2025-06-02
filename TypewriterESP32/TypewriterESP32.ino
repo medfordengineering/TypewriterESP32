@@ -44,12 +44,36 @@ e) Paste webhook address into the webhook section on twilio and add /sms
 Any new webhook MUST be placed in the Messageing Service SMSTypewriter NOT in the NOT under active numbers which is superceeded by the Messaging
 Service. 
 
+1) If you run sudo ngrok service stop there will be no services shown under endpoints on the ngrok website
+
 Problems:
 a) check service with 
 
 b) remove service with 
   sudo rm /etc/systemd/system/ngrok.service
 
+*/
+
+/* NGROK
+
+1. ngrok needs to run on a server in the host domain. 
+2. Set up a config file under 
+/home/teacher/.config/ngrok/ngrok.yml
+
+3. Here is the bare minimum for a configuration file
+
+version: 3
+
+agent:
+  authtoken: 4nq9771bPxe8ctg7LKr_2ClH7Y15Zqe4bWLWF9p
+  //api_key: 24yRd5U3DestCQapJrrVHLOqiAC_7RviwRqpd3wc9dKLujQZN NOT USED IN MY VERSION BUT SHOWN IN EXAMPLE
+
+tunnels:
+  basic:
+    proto: http
+    addr: 192.168.0.16:80
+
+4. 
 */
 
 #include <Adafruit_MCP23X17.h>
@@ -79,9 +103,12 @@ b) remove service with
 #define BOLD 49         //1
 #define UNDERLINE 17    //MAR REL
 #define CENTER 99       //C
+#define DOWN 70         //FWD
+#define UP 71           //BACKSPACE
 
 #define CPM 100    // Characters per millisecond
-#define MARGIN 88  // Total type margine
+#define MARGIN 80  // Total type margine
+#define RETURN_DELAY 2000
 
 #define MAR 3
 #define NOV 11
@@ -214,8 +241,8 @@ uint8_t letters[128][2] = {
   { 0, 0 },  //68 NULL
   { 0, 0 },  //69 NULL
 
-  { 0, 0 },  //70 NULL
-  { 0, 0 },  //71 NULL
+  { 5, 1 },  //70 FWD/DOWN
+  { 5, 2 },  //71 BS/UP
   { 0, 0 },  //72 NULL
   { 0, 0 },  //73 NULL
   { 0, 0 },  //74 NULL
@@ -301,7 +328,7 @@ bool bold = false;
 bool underline = false;
 //bool daylightsavings = false;
 
-uint8_t carriage_index;
+//uint8_t carriage_index;
 
 /*
 // Prints out the contents of the phone file on startup
@@ -332,8 +359,8 @@ String findCaller(fs::FS &fs, String n) {
 
   // Read through the file line by line. If callers number is found, return the corresponding name.
   while (file.available()) {
-   // String line = file.readStringUntil('\n');
-   String line = file.readStringUntil('<');
+    // String line = file.readStringUntil('\n');
+    String line = file.readStringUntil('<');
     if (line.indexOf(n) != -1) {
       name = line.substring(line.indexOf(',') + 1);
       name.trim();
@@ -434,11 +461,13 @@ void send_character(uint8_t c) {
   mcp.digitalWrite(CODE, LOW);
 
   // Check if carriage is at the paper margin, if so, reset the carriage counter and send a return
+  /*
   if (carriage_index++ > MARGIN) {
     carriage_index = 0;
     send_character('-');
     send_character('\r');
-  }
+    delay(2000);
+  }*/
 }
 
 void send_command(uint8_t c) {
@@ -451,7 +480,7 @@ void tprint(String s) {
   int i = 0;
   while (i < s.length()) {
 
-    if (s[i] == '\r') carriage_index = 0;  // Reset the carriage counter each time a return is found.
+    // if (s[i] == '\r') carriage_index = 0;  // Reset the carriage counter each time a return is found.
 
     if (s[i] == '*') {
       bold = !bold;  // Set state of bold in case a user forgets the second asterix
@@ -514,6 +543,7 @@ void setup() {
   tprint("\r");
   send_command(CENTER);
   tprint("Panasonic T36 Enabled.\r");
+
 
   // Start WIFI
   WiFi.begin(WIFI_SSID, WIFI_PASS);
@@ -603,10 +633,11 @@ void setup() {
   Serial.println(asg);
 
   // Print out phone list
- // readFile(LittleFS);
+  // readFile(LittleFS);
 
   tprint(asg);
   delay(asg.length() * CPM);
+  send_character('\r');
 
   // Turn on auto-indent
   // send_command(AUTO_INDENT);
@@ -636,13 +667,32 @@ void loop() {
       valid_user = true;
 
     // Build message
-    String message = date + " " + timeofday + " " + id + ": " + body + '\r';
+    //String message = date + " " + timeofday + " " + id + ": " + body + '\r';
+    String message = date + " " + timeofday + " " + id + ": " + body;
 
+
+    // NEED TO ADD RETURNS
     // Send message only if valid user
-    if (valid_user == true)
-      tprint(message);
+    if (valid_user == true) {
+      uint8_t mlen = message.length();
+      if (mlen < MARGIN) {
+        tprint(message + '\r');
 
-    Serial.println(message);
+      } else if (mlen > (MARGIN + MARGIN)) {
+        tprint(message.substring(0, MARGIN) + '\r');
+
+        tprint(message.substring(MARGIN, MARGIN + MARGIN) + '\r');
+
+        tprint(message.substring(MARGIN + MARGIN) + '\r');
+
+      } else {
+
+        tprint(message.substring(0, MARGIN) + '\r');
+
+        tprint(message.substring(MARGIN) + '\r');
+      }
+    }
+    send_character('\r');
     msg = false;
   }
 }
