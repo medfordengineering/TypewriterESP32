@@ -108,6 +108,7 @@ tunnels:
 
 #define CPM 100    // Characters per millisecond
 #define MARGIN 80  // Total type margine
+#define BUFFER 10
 #define RETURN_DELAY 2000
 
 #define MAR 3
@@ -519,6 +520,14 @@ void getDateTime() {
   day = date.substring(6, 8).toInt();
 }
 
+int8_t string_segment(String msg) {
+  int8_t space = msg.substring(0, MARGIN).indexOf(' ', MARGIN - BUFFER);
+  if (space != -1)
+    return space + 1;
+  else
+    return MARGIN;
+}
+
 void setup() {
   int i;
 
@@ -644,7 +653,7 @@ void setup() {
 }
 
 void loop() {
-
+  uint8_t margin;
   if (msg == true) {
 
     // Turn off bold and underline if either were left on from previous message
@@ -669,9 +678,7 @@ void loop() {
     // Build message
     //String message = date + " " + timeofday + " " + id + ": " + body + '\r';
     String message = date + " " + timeofday + " " + id + ": " + body;
-
-
-    // NEED TO ADD RETURNS
+    
     // Send message only if valid user
     if (valid_user == true) {
       uint8_t mlen = message.length();
@@ -679,17 +686,21 @@ void loop() {
         tprint(message + '\r');
 
       } else if (mlen > (MARGIN + MARGIN)) {
-        tprint(message.substring(0, MARGIN) + '\r');
+        margin = string_segment(message);
+        tprint(message.substring(0, margin) + '\r');
 
-        tprint(message.substring(MARGIN, MARGIN + MARGIN) + '\r');
+        message = message.substring(margin);
+        margin = string_segment(message);
+        tprint(message.substring(0, margin) + '\r');
 
-        tprint(message.substring(MARGIN + MARGIN) + '\r');
+        tprint(message.substring(margin) + '\r');
+
 
       } else {
+        margin = string_segment(message);
+        tprint(message.substring(0, margin) + '\r');
 
-        tprint(message.substring(0, MARGIN) + '\r');
-
-        tprint(message.substring(MARGIN) + '\r');
+        tprint(message.substring(margin) + '\r');
       }
     }
     send_character('\r');
