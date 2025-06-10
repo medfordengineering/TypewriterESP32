@@ -410,65 +410,56 @@ void send_character(uint8_t c) {
   if (caps != NULL) {
     shift = true;
     c += 32;
-  } else if (odds != NULL) {
+  } else if (odds != NULL)
     shift = true;
-  } else {
-    shift = false;
-  }
+  if ((keys != NULL) || (ctrs != NULL) || (odds != NULL) || (caps != NULL)) {  // Checks to make sure character is in character set
 
-  // Each character corresponds to two bytes in letter array that write and read pins respectively
-  uint8_t tx_pin_select = letters[c][0];
-  uint8_t rx_pin_select = letters[c][1];
 
-  /*  There are two 8-channel mulitpexers to accomodate 12 bits. This requires 6 address bits. Three for the lower MP and
+    // Each character corresponds to two bytes in letter array that write and read pins respectively
+    uint8_t tx_pin_select = letters[c][0];
+    uint8_t rx_pin_select = letters[c][1];
+
+    /*  There are two 8-channel mulitpexers to accomodate 12 bits. This requires 6 address bits. Three for the lower MP and
       3 for the upper MP. The output of the lower MP is connected to channel 7 (a free channel) on the upper MP. To address the 
       lower MP you must select that address for the lower byte and 7 for the upper byte to access channel 7. To address the upper MP 
       you need to subtract 8 and shift the bits by 4.
   */
-  if (rx_pin_select > 7) {
-    rx_pin_select -= 8;
-    rx_pin_select <<= 4;
-  } else {
-    rx_pin_select |= 0x70;
+    if (rx_pin_select > 7) {
+      rx_pin_select -= 8;
+      rx_pin_select <<= 4;
+    } else {
+      rx_pin_select |= 0x70;
+    }
+
+    // Select channel on demultiplexer from which to write signal
+    mcp.writeGPIOA(rx_pin_select);
+
+    // Select channel on multiplexer from which to read signal and disable strobe with OR.
+    mcp.writeGPIOB(tx_pin_select | 0x40);
+
+    // Turn on SHIFT (set off, LOW, by default with write to GPIOB) give time to settle
+    if (shift == true) mcp.digitalWrite(SHIFT, HIGH);
+    if (shift == true) delay(200);
+
+    // Turn on CODE (set off, LOW, by default with write to GPIOB) give time to settle
+    if (code == true) mcp.digitalWrite(CODE, HIGH);
+    if (code == true) delay(200);
+
+    // Delay to allow for double characters. The typewriter by default rejects double characters when printed too quickly
+    if (last_character == c) delay(50);
+
+    // Strobe demulitplexer to type character
+    mcp.digitalWrite(STROBE, LOW);
+    delay(100);
+    mcp.digitalWrite(STROBE, HIGH);
+    last_character = c;
+
+    // Turn off SHIFT
+    mcp.digitalWrite(SHIFT, LOW);
+
+    // Turn off CODE
+    mcp.digitalWrite(CODE, LOW);
   }
-
-  // Select channel on demultiplexer from which to write signal
-  mcp.writeGPIOA(rx_pin_select);
-
-  // Select channel on multiplexer from which to read signal and disable strobe with OR.
-  mcp.writeGPIOB(tx_pin_select | 0x40);
-
-  // Turn on SHIFT (set off, LOW, by default with write to GPIOB) give time to settle
-  if (shift == true) mcp.digitalWrite(SHIFT, HIGH);
-  if (shift == true) delay(200);
-
-  // Turn on CODE (set off, LOW, by default with write to GPIOB) give time to settle
-  if (code == true) mcp.digitalWrite(CODE, HIGH);
-  if (code == true) delay(200);
-
-  // Delay to allow for double characters. The typewriter by default rejects double characters when printed too quickly
-  if (last_character == c) delay(50);
-
-  // Strobe demulitplexer to type character
-  mcp.digitalWrite(STROBE, LOW);
-  delay(100);
-  mcp.digitalWrite(STROBE, HIGH);
-  last_character = c;
-
-  // Turn off SHIFT
-  mcp.digitalWrite(SHIFT, LOW);
-
-  // Turn off CODE
-  mcp.digitalWrite(CODE, LOW);
-
-  // Check if carriage is at the paper margin, if so, reset the carriage counter and send a return
-  /*
-  if (carriage_index++ > MARGIN) {
-    carriage_index = 0;
-    send_character('-');
-    send_character('\r');
-    delay(2000);
-  }*/
 }
 
 void send_command(uint8_t c) {
@@ -478,15 +469,13 @@ void send_command(uint8_t c) {
 }
 
 void tprint(String s) {
+
   int i = 0;
   while (i < s.length()) {
-
-    // if (s[i] == '\r') carriage_index = 0;  // Reset the carriage counter each time a return is found.
-
-    if (s[i] == '*') {
+    if (s[i] == '^') {
       bold = !bold;  // Set state of bold in case a user forgets the second asterix
       send_command(BOLD);
-    } else if (s[i] == '_') {
+    } else if (s[i] == '~') {
       underline = !underline;  // Set the state of underline in a user forgets the second underline
       send_command(UNDERLINE);
     } else
@@ -678,7 +667,7 @@ void loop() {
     // Build message
     //String message = date + " " + timeofday + " " + id + ": " + body + '\r';
     String message = date + " " + timeofday + " " + id + ": " + body;
-    
+
     // Send message only if valid user
     if (valid_user == true) {
       uint8_t mlen = message.length();
@@ -694,13 +683,19 @@ void loop() {
         tprint(message.substring(0, margin) + '\r');
 
         tprint(message.substring(margin) + '\r');
-
-
       } else {
         margin = string_segment(message);
         tprint(message.substring(0, margin) + '\r');
-
-        tprint(message.substring(margin) + '\r');
+        margin = string_segment(message.substring(margin));
+        if (margin < MARGIN) {
+          tprint(message + '\r');
+          Serial.print(message.substring(margin) + '\n');
+        } else {
+          tprint(message.substring(margin, margin + MARGIN) + '\r');
+          Serial.print(message.substring(margin, margin + MARGIN) + '\n');
+          tprint(message.substring(margin + MARGIN) + '\r');
+          Serial.print(message.substring(margin + MARGIN) + '\n');
+        }
       }
     }
     send_character('\r');
