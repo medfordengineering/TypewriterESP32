@@ -407,59 +407,58 @@ void send_character(uint8_t c) {
   char *caps = strchr(caps_char, c);
   char *ctrs = strchr(ctrs_char, c);
 
+  if ((keys == NULL) && (ctrs == NULL) && (odds == NULL) && (caps == NULL)) c = '-';  // If char not found replace with -
+
   if (caps != NULL) {
     shift = true;
     c += 32;
   } else if (odds != NULL)
     shift = true;
-  if ((keys != NULL) || (ctrs != NULL) || (odds != NULL) || (caps != NULL)) {  // Checks to make sure character is in character set
 
+  // Each character corresponds to two bytes in letter array that write and read pins respectively
+  uint8_t tx_pin_select = letters[c][0];
+  uint8_t rx_pin_select = letters[c][1];
 
-    // Each character corresponds to two bytes in letter array that write and read pins respectively
-    uint8_t tx_pin_select = letters[c][0];
-    uint8_t rx_pin_select = letters[c][1];
-
-    /*  There are two 8-channel mulitpexers to accomodate 12 bits. This requires 6 address bits. Three for the lower MP and
+  /*  There are two 8-channel mulitpexers to accomodate 12 bits. This requires 6 address bits. Three for the lower MP and
       3 for the upper MP. The output of the lower MP is connected to channel 7 (a free channel) on the upper MP. To address the 
       lower MP you must select that address for the lower byte and 7 for the upper byte to access channel 7. To address the upper MP 
       you need to subtract 8 and shift the bits by 4.
   */
-    if (rx_pin_select > 7) {
-      rx_pin_select -= 8;
-      rx_pin_select <<= 4;
-    } else {
-      rx_pin_select |= 0x70;
-    }
-
-    // Select channel on demultiplexer from which to write signal
-    mcp.writeGPIOA(rx_pin_select);
-
-    // Select channel on multiplexer from which to read signal and disable strobe with OR.
-    mcp.writeGPIOB(tx_pin_select | 0x40);
-
-    // Turn on SHIFT (set off, LOW, by default with write to GPIOB) give time to settle
-    if (shift == true) mcp.digitalWrite(SHIFT, HIGH);
-    if (shift == true) delay(200);
-
-    // Turn on CODE (set off, LOW, by default with write to GPIOB) give time to settle
-    if (code == true) mcp.digitalWrite(CODE, HIGH);
-    if (code == true) delay(200);
-
-    // Delay to allow for double characters. The typewriter by default rejects double characters when printed too quickly
-    if (last_character == c) delay(50);
-
-    // Strobe demulitplexer to type character
-    mcp.digitalWrite(STROBE, LOW);
-    delay(100);
-    mcp.digitalWrite(STROBE, HIGH);
-    last_character = c;
-
-    // Turn off SHIFT
-    mcp.digitalWrite(SHIFT, LOW);
-
-    // Turn off CODE
-    mcp.digitalWrite(CODE, LOW);
+  if (rx_pin_select > 7) {
+    rx_pin_select -= 8;
+    rx_pin_select <<= 4;
+  } else {
+    rx_pin_select |= 0x70;
   }
+
+  // Select channel on demultiplexer from which to write signal
+  mcp.writeGPIOA(rx_pin_select);
+
+  // Select channel on multiplexer from which to read signal and disable strobe with OR.
+  mcp.writeGPIOB(tx_pin_select | 0x40);
+
+  // Turn on SHIFT (set off, LOW, by default with write to GPIOB) give time to settle
+  if (shift == true) mcp.digitalWrite(SHIFT, HIGH);
+  if (shift == true) delay(200);
+
+  // Turn on CODE (set off, LOW, by default with write to GPIOB) give time to settle
+  if (code == true) mcp.digitalWrite(CODE, HIGH);
+  if (code == true) delay(200);
+
+  // Delay to allow for double characters. The typewriter by default rejects double characters when printed too quickly
+  if (last_character == c) delay(50);
+
+  // Strobe demulitplexer to type character
+  mcp.digitalWrite(STROBE, LOW);
+  delay(100);
+  mcp.digitalWrite(STROBE, HIGH);
+  last_character = c;
+
+  // Turn off SHIFT
+  mcp.digitalWrite(SHIFT, LOW);
+
+  // Turn off CODE
+  mcp.digitalWrite(CODE, LOW);
 }
 
 void send_command(uint8_t c) {
@@ -508,15 +507,6 @@ void getDateTime() {
   month = date.substring(3, 5).toInt();
   day = date.substring(6, 8).toInt();
 }
-/*
-int8_t string_segment(String msg) {
-  // if (length.msg < MARGIN) return -1;
-  int8_t space = msg.substring(0, MARGIN).indexOf(' ', MARGIN - BUFFER);
-  if (space != -1)
-    return space + 1;
-  else
-    return MARGIN;
-}*/
 
 int8_t parse_message(String msg) {
   if (msg.length() < MARGIN) {
@@ -679,13 +669,12 @@ void loop() {
       valid_user = true;
 
     // Build message
-    //String message = date + " " + timeofday + " " + id + ": " + body + '\r';
-    String message = date + " " + timeofday + " " + id + ": " + body;
+    String message = date + " " + timeofday + " " + id + ": " + body + '\r';
 
     // Send message only if valid user
     if (valid_user == true) parse_message(message);
-    
-    send_character('\r');  // MAYBE MISSPLACED ONE LEVEL
+
+    //send_character('\r');  
     msg = false;
   }
 }
