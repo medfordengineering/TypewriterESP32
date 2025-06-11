@@ -508,13 +508,27 @@ void getDateTime() {
   month = date.substring(3, 5).toInt();
   day = date.substring(6, 8).toInt();
 }
-
+/*
 int8_t string_segment(String msg) {
+  // if (length.msg < MARGIN) return -1;
   int8_t space = msg.substring(0, MARGIN).indexOf(' ', MARGIN - BUFFER);
   if (space != -1)
     return space + 1;
   else
     return MARGIN;
+}*/
+
+int8_t parse_message(String msg) {
+  if (msg.length() < MARGIN) {
+    tprint(msg + '\r');
+  } else {
+    int8_t margin = msg.substring(0, MARGIN).indexOf(' ', MARGIN - BUFFER);
+    if (margin == -1) margin = MARGIN;
+    tprint(msg.substring(0, margin) + '\r');
+    msg = msg.substring(margin);
+    parse_message(msg);
+  }
+  return 1;
 }
 
 void setup() {
@@ -669,36 +683,9 @@ void loop() {
     String message = date + " " + timeofday + " " + id + ": " + body;
 
     // Send message only if valid user
-    if (valid_user == true) {
-      uint8_t mlen = message.length();
-      if (mlen < MARGIN) {
-        tprint(message + '\r');
-
-      } else if (mlen > (MARGIN + MARGIN)) {
-        margin = string_segment(message);
-        tprint(message.substring(0, margin) + '\r');
-
-        message = message.substring(margin);
-        margin = string_segment(message);
-        tprint(message.substring(0, margin) + '\r');
-
-        tprint(message.substring(margin) + '\r');
-      } else {
-        margin = string_segment(message);
-        tprint(message.substring(0, margin) + '\r');
-        margin = string_segment(message.substring(margin));
-        if (margin < MARGIN) {
-          tprint(message + '\r');
-          Serial.print(message.substring(margin) + '\n');
-        } else {
-          tprint(message.substring(margin, margin + MARGIN) + '\r');
-          Serial.print(message.substring(margin, margin + MARGIN) + '\n');
-          tprint(message.substring(margin + MARGIN) + '\r');
-          Serial.print(message.substring(margin + MARGIN) + '\n');
-        }
-      }
-    }
-    send_character('\r');
+    if (valid_user == true) parse_message(message);
+    
+    send_character('\r');  // MAYBE MISSPLACED ONE LEVEL
     msg = false;
   }
 }
